@@ -2,11 +2,15 @@ package com.xiaoyan.projectskeleton.service.impl.user;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xiaoyan.projectskeleton.common.config.JwtConfig;
 import com.xiaoyan.projectskeleton.common.exception.ExceptionUtils;
 import com.xiaoyan.projectskeleton.common.exception.UserErrorCode;
+import com.xiaoyan.projectskeleton.common.util.JwtUtils;
 import com.xiaoyan.projectskeleton.mapper.user.RoleMapper;
 import com.xiaoyan.projectskeleton.mapper.user.UserMapper;
 import com.xiaoyan.projectskeleton.mapper.user.UserProfileMapper;
+import com.xiaoyan.projectskeleton.repository.dto.user.JwtTokenDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserLoginDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.Role;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
@@ -33,6 +37,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     
     @Autowired
     private RoleMapper roleMapper;
+    
+    @Autowired
+    private JwtUtils jwtUtils;
+    
+    @Autowired
+    private JwtConfig jwtConfig;
     
     /**
      * 默认角色编码
@@ -94,6 +104,53 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
     
     /**
+     * 用户登录
+     * @param loginDTO 登录信息
+     * @return JWT令牌
+     */
+    @Override
+    public JwtTokenDTO login(UserLoginDTO loginDTO) {
+        // 1. 根据用户名查询用户
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getUsername, loginDTO.getUsername());
+        User user = userMapper.selectOne(queryWrapper);
+        
+        // 2. 校验用户是否存在
+        ExceptionUtils.assertNotNull(user, UserErrorCode.USER_NOT_EXISTS);
+        
+        // 3. 校验密码是否正确（实际项目中应该对密码进行加密处理后再比较）
+        ExceptionUtils.assertTrue(user.getPassword().equals(loginDTO.getPassword()), 
+                UserErrorCode.PASSWORD_ERROR);
+        
+        // 4. 校验账号状态
+        if (user.getStatus() == 0) {
+            ExceptionUtils.throwBizException(UserErrorCode.ACCOUNT_NOT_ACTIVATED);
+        } else if (user.getStatus() == 2) {
+            ExceptionUtils.throwBizException(UserErrorCode.ACCOUNT_DISABLED);
+        }
+        
+        // 5. 获取角色信息
+        Role role = roleMapper.selectById(user.getRoleId());
+        ExceptionUtils.assertNotNull(role, UserErrorCode.ROLE_NOT_EXISTS);
+        
+        // 6. 生成AccessToken和RefreshToken
+        String accessToken = jwtUtils.generateAccessToken(user.getId(), user.getUsername(), role.getCode());
+        String refreshToken = jwtUtils.generateRefreshToken(user.getId());
+        
+        // 7. 更新最后登录时间
+        user.setLastLoginTime(java.time.LocalDateTime.now());
+        userMapper.updateById(user);
+        
+        // 8. 返回JWT令牌
+        return JwtTokenDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .accessTokenExpiresIn(jwtConfig.getAccessTokenExpiration())
+                .tokenType("Bearer")
+                .build();
+    }
+    
+    /**
      * 检查用户名是否已存在
      * @param username 用户名
      * @return 是否存在
@@ -115,5 +172,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getEmail, email);
         return userMapper.selectCount(queryWrapper) > 0;
+    }
+    
+    /**
+     * 根据ID获取用户
+     * @param id 用户ID
+     * @return 用户对象
+     */
+    @Override
+    public User getById(Long id) {
+        return super.getById(id);
     }
 } 

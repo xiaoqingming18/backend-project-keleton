@@ -86,7 +86,71 @@
 | 404 | 资源不存在 |
 | 500 | 服务器内部错误 |
 
-## 2. 用户名检查接口
+## 2. 用户登录接口
+
+### 接口信息
+
+- **接口路径**：`/user/login`
+- **请求方式**：POST
+- **接口描述**：用户登录接口，返回JWT令牌
+
+### 请求参数
+
+#### 请求体 (JSON)
+
+```json
+{
+  "username": "testuser",
+  "password": "password123"
+}
+```
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| username | String | 是 | 用户名 |
+| password | String | 是 | 密码 |
+
+### 响应参数
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "登录成功",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "accessTokenExpiresIn": 3600,
+    "tokenType": "Bearer"
+  }
+}
+```
+
+| 参数名 | 类型 | 说明 |
+| --- | --- | --- |
+| code | Integer | 状态码，200表示成功 |
+| success | Boolean | 是否成功 |
+| message | String | 提示信息 |
+| data | Object | JWT令牌信息 |
+| data.accessToken | String | 访问令牌 |
+| data.refreshToken | String | 刷新令牌 |
+| data.accessTokenExpiresIn | Long | 访问令牌过期时间（秒） |
+| data.tokenType | String | 令牌类型，固定为"Bearer" |
+
+### 错误码
+
+| 错误码 | 说明 |
+| --- | --- |
+| 10005 | 用户不存在 |
+| 10006 | 密码错误 |
+| 10007 | 账号已被禁用 |
+| 10008 | 账号未激活 |
+| 10009 | 角色不存在 |
+| 400 | 参数错误 |
+| 401 | 未授权 |
+| 500 | 服务器内部错误 |
+
+## 3. 用户名检查接口
 
 ### 接口信息
 
@@ -120,7 +184,7 @@
 | message | String | 提示信息 |
 | data | Boolean | 用户名是否存在 |
 
-## 3. 邮箱检查接口
+## 4. 邮箱检查接口
 
 ### 接口信息
 
@@ -154,7 +218,7 @@
 | message | String | 提示信息 |
 | data | Boolean | 邮箱是否存在 |
 
-## 4. 角色列表接口
+## 5. 角色列表接口
 
 ### 接口信息
 

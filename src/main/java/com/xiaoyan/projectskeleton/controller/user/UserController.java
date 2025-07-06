@@ -1,6 +1,8 @@
 package com.xiaoyan.projectskeleton.controller.user;
 
 import com.xiaoyan.projectskeleton.common.util.ApiResponse;
+import com.xiaoyan.projectskeleton.repository.dto.user.JwtTokenDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserLoginDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 import com.xiaoyan.projectskeleton.service.user.UserService;
@@ -30,6 +32,18 @@ public class UserController {
         log.info("用户注册: {}", registerDTO.getUsername());
         User user = userService.register(registerDTO);
         return ApiResponse.success(user, "注册成功");
+    }
+    
+    /**
+     * 用户登录
+     * @param loginDTO 登录信息
+     * @return 登录结果（JWT令牌）
+     */
+    @PostMapping("/login")
+    public ApiResponse<JwtTokenDTO> login(@RequestBody @Validated UserLoginDTO loginDTO) {
+        log.info("用户登录: {}", loginDTO.getUsername());
+        JwtTokenDTO jwtTokenDTO = userService.login(loginDTO);
+        return ApiResponse.success(jwtTokenDTO, "登录成功");
     }
     
     /**

@@ -12,16 +12,24 @@ src/main/java/com/xiaoyan/projectskeleton/
 │   ├── config/             # 配置类
 │   │   ├── MybatisPlusConfig.java  # MyBatis-Plus配置类
 │   │   ├── MyMetaObjectHandler.java # 字段自动填充处理器
+│   │   ├── JwtConfig.java  # JWT配置类
 │   │   └── WebMvcConfig.java # Web MVC配置类
 │   ├── constant/           # 常量定义
 │   ├── enums/              # 枚举类
 │   ├── exception/          # 异常处理
 │   ├── interceptor/        # 拦截器
 │   └── util/               # 工具类
-│       └── ApiResponse.java # API响应封装工具类
+│       ├── ApiResponse.java # API响应封装工具类
+│       └── JwtUtils.java    # JWT工具类
 ├── controller/             # 控制器层
+│   └── auth/               # 认证相关控制器
+│       └── AuthController.java # 认证控制器
 ├── service/                # 服务层接口
 ├── repository/             # 数据访问层
+│   ├── dto/                # 数据传输对象
+│   │   └── user/           # 用户相关DTO
+│   │       ├── JwtTokenDTO.java # JWT令牌DTO
+│   │       └── RefreshTokenDTO.java # 刷新令牌DTO
 │   └── entity/             # 实体类
 │       └── BaseEntity.java # 基础实体类
 ├── mapper/                 # MyBatis Mapper接口
@@ -51,6 +59,12 @@ mybatis-plus.global-config.db-config.id-type=auto
 mybatis-plus.global-config.db-config.logic-delete-field=deleted
 mybatis-plus.global-config.db-config.logic-delete-value=1
 mybatis-plus.global-config.db-config.logic-not-delete-value=0
+
+# JWT配置
+jwt.secret=projectSkeletonSecretKey123456789012345678901234567890
+jwt.access-token-expiration=3600
+jwt.refresh-token-expiration=604800
+jwt.issuer=project-skeleton
 ```
 
 ### Web MVC 配置
@@ -84,6 +98,87 @@ ApiResponse<User> response = ApiResponse.success(user, "用户信息获取成功
 ```java
 ApiResponse<Object> response = ApiResponse.failed(400, "参数错误");
 ```
+
+### JwtUtils
+
+位置：`src/main/java/com/xiaoyan/projectskeleton/common/util/JwtUtils.java`
+
+这是一个JWT工具类，用于生成、验证和解析JWT令牌。主要功能包括：
+
+1. 生成AccessToken和RefreshToken
+2. 验证AccessToken和RefreshToken的有效性
+3. 从AccessToken中获取用户信息（用户ID、用户名、角色）
+4. 根据RefreshToken刷新AccessToken
+
+#### 使用方法
+
+1. 生成AccessToken：
+```java
+String accessToken = jwtUtils.generateAccessToken(user.getId(), user.getUsername(), role.getCode());
+```
+
+2. 生成RefreshToken：
+```java
+String refreshToken = jwtUtils.generateRefreshToken(user.getId());
+```
+
+3. 从AccessToken中获取用户信息：
+```java
+Long userId = jwtUtils.getUserIdFromAccessToken(token);
+String username = jwtUtils.getUsernameFromAccessToken(token);
+String roleCode = jwtUtils.getRoleFromAccessToken(token);
+```
+
+4. 刷新AccessToken：
+```java
+String newAccessToken = jwtUtils.refreshAccessToken(refreshToken, user, roleCode);
+```
+
+### JWT双Token认证方案
+
+项目实现了基于JWT的双Token认证方案，包括AccessToken和RefreshToken：
+
+1. **AccessToken**：
+   - 用于访问受保护的API资源
+   - 包含用户ID、用户名和角色信息
+   - 有效期较短（默认1小时）
+
+2. **RefreshToken**：
+   - 用于在AccessToken过期后获取新的AccessToken
+   - 仅包含用户ID
+   - 有效期较长（默认7天）
+
+#### 认证流程
+
+1. 用户登录成功后，服务端生成AccessToken和RefreshToken返回给客户端
+2. 客户端使用AccessToken访问受保护的API资源
+3. 当AccessToken过期时，客户端使用RefreshToken请求刷新接口获取新的AccessToken和RefreshToken
+4. 如果RefreshToken也过期，用户需要重新登录
+
+#### 刷新Token接口
+
+- 接口路径：`/api/auth/refresh-token`
+- 请求方式：POST
+- 请求参数：
+  ```json
+  {
+    "refreshToken": "your_refresh_token"
+  }
+  ```
+- 响应结果：
+  ```json
+  {
+    "code": 200,
+    "success": true,
+    "message": "Token刷新成功",
+    "data": {
+      "accessToken": "new_access_token",
+      "refreshToken": "new_refresh_token",
+      "accessTokenExpiresIn": 3600,
+      "tokenType": "Bearer"
+    }
+  }
+  ```
 
 ### BaseEntity
 
@@ -182,6 +277,7 @@ try {
 2. **通用工具**
    - API 响应封装
    - 业务异常处理工具
+   - JWT 认证工具
 
 3. **数据访问层**
    - MyBatis-Plus 3.5.9
@@ -204,6 +300,13 @@ try {
    - `/user/check-email` - 检查邮箱是否已被注册
    - `/user/role/list` - 获取所有角色列表
 
+5. **认证服务模块**
+   - JWT 双 Token 认证方案
+   - Token 刷新功能
+
+   接口列表：
+   - `/auth/refresh-token` - 刷新 Token
+
 项目仍在开发中，后续将添加更多功能模块，如用户认证、权限管理等。
 
 > 注：详细的接口文档请参考 `docs/api_doc/` 目录下的相关文件，如 `docs/api_doc/user_api.md`。
@@ -213,6 +316,7 @@ try {
 - Java 17
 - Spring Boot 3.2.4
 - MyBatis-Plus 3.5.9
+- JWT 0.11.5
 - MySQL
 - Maven
 

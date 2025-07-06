@@ -38,4 +38,15 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             return roleDTO;
         }).collect(Collectors.toList());
     }
+    
+    /**
+     * 根据ID获取角色
+     *
+     * @param id 角色ID
+     * @return 角色对象
+     */
+    @Override
+    public Role getById(Long id) {
+        return super.getById(id);
+    }
 } 
