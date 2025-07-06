@@ -183,12 +183,13 @@ try {
    - API 响应封装
 
 3. **数据访问层**
-   - MyBatis-Plus 3.5.4
+   - MyBatis-Plus 3.5.9
    - MySQL 数据库支持
    - 基础实体类
    - 字段自动填充
    - 逻辑删除
    - 乐观锁
+   - 分页功能
 
 4. **用户服务模块**
    - 用户基础信息管理
@@ -201,6 +202,39 @@ try {
 
 - Java 17
 - Spring Boot 3.2.4
-- MyBatis-Plus 3.5.4
+- MyBatis-Plus 3.5.9
 - MySQL
-- Maven 
+- Maven
+
+## 特别说明
+
+### MyBatis-Plus 3.5.9 版本特性
+
+从 MyBatis-Plus 3.5.9 版本开始，部分功能被拆分到单独的模块中：
+
+1. **分页功能**: 需要额外引入 `mybatis-plus-jsqlparser` 依赖
+   ```xml
+   <dependency>
+       <groupId>com.baomidou</groupId>
+       <artifactId>mybatis-plus-jsqlparser</artifactId>
+       <version>${mybatis-plus.version}</version>
+   </dependency>
+   ```
+
+2. **配置分页插件**:
+   ```java
+   @Bean
+   public MybatisPlusInterceptor mybatisPlusInterceptor() {
+       MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+       
+       // 分页插件
+       PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor();
+       paginationInnerInterceptor.setDbType(DbType.MYSQL);
+       paginationInnerInterceptor.setMaxLimit(500L);
+       interceptor.addInnerInterceptor(paginationInnerInterceptor);
+       
+       // 其他插件...
+       
+       return interceptor;
+   }
+   ``` 
