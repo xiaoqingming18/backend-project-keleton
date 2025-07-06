@@ -180,6 +180,299 @@ String newAccessToken = jwtUtils.refreshAccessToken(refreshToken, user, roleCode
   }
   ```
 
+### 接口访问控制机制
+
+项目实现了基于JWT的接口访问控制机制，包括登录验证和角色权限验证。
+
+#### 自定义注解
+
+1. **@RequireLogin**
+
+   位置：`src/main/java/com/xiaoyan/projectskeleton/common/annotation/RequireLogin.java`
+
+   用于标记需要登录才能访问的接口。在控制器方法上添加此注解后，未登录用户将无法访问该接口。
+
+   ```java
+   @Target({ElementType.METHOD, ElementType.TYPE})
+   @Retention(RetentionPolicy.RUNTIME)
+   public @interface RequireLogin {
+   }
+   ```
+
+   使用示例：
+   ```java
+   @GetMapping("/profile")
+   @RequireLogin
+   public ApiResponse<UserProfileDTO> getUserProfile() {
+       // 只有登录用户才能访问此接口
+       Long userId = UserContext.getCurrentUserId();
+       return ApiResponse.success(userService.getUserProfile(userId));
+   }
+   ```
+
+2. **@RequireRoles**
+
+   位置：`src/main/java/com/xiaoyan/projectskeleton/common/annotation/RequireRoles.java`
+
+   用于标记需要特定角色才能访问的接口。在控制器方法上添加此注解并指定允许的角色后，只有拥有指定角色的用户才能访问该接口。
+
+   ```java
+   @Target({ElementType.METHOD, ElementType.TYPE})
+   @Retention(RetentionPolicy.RUNTIME)
+   public @interface RequireRoles {
+       String[] value();
+   }
+   ```
+
+   使用示例：
+   ```java
+   @PutMapping("/admin/user/{id}")
+   @RequireRoles({"ADMIN"})
+   public ApiResponse<Void> updateUser(@PathVariable Long id, @RequestBody UserUpdateDTO userUpdateDTO) {
+       // 只有ADMIN角色的用户才能访问此接口
+       userService.updateUser(id, userUpdateDTO);
+       return ApiResponse.success();
+   }
+   ```
+
+#### 用户上下文
+
+位置：`src/main/java/com/xiaoyan/projectskeleton/common/context/UserContext.java`
+
+用户上下文类，基于ThreadLocal实现，用于在请求处理过程中存储和获取当前登录用户的信息。
+
+```java
+public class UserContext {
+    private static final ThreadLocal<Long> userIdHolder = new ThreadLocal<>();
+    private static final ThreadLocal<String> usernameHolder = new ThreadLocal<>();
+    private static final ThreadLocal<String> roleHolder = new ThreadLocal<>();
+
+    // 设置当前用户ID
+    public static void setCurrentUserId(Long userId) {
+        userIdHolder.set(userId);
+    }
+
+    // 获取当前用户ID
+    public static Long getCurrentUserId() {
+        return userIdHolder.get();
+    }
+
+    // 设置当前用户名
+    public static void setCurrentUsername(String username) {
+        usernameHolder.set(username);
+    }
+
+    // 获取当前用户名
+    public static String getCurrentUsername() {
+        return usernameHolder.get();
+    }
+
+    // 设置当前用户角色
+    public static void setCurrentRole(String role) {
+        roleHolder.set(role);
+    }
+
+    // 获取当前用户角色
+    public static String getCurrentRole() {
+        return roleHolder.get();
+    }
+
+    // 清除当前用户信息
+    public static void clear() {
+        userIdHolder.remove();
+        usernameHolder.remove();
+        roleHolder.remove();
+    }
+}
+```
+
+#### 认证拦截器
+
+位置：`src/main/java/com/xiaoyan/projectskeleton/common/interceptor/AuthInterceptor.java`
+
+认证拦截器，用于拦截请求并进行身份验证和权限检查。主要功能包括：
+
+1. 从请求头中提取AccessToken
+2. 验证AccessToken的有效性
+3. 解析AccessToken获取用户信息
+4. 检查接口是否需要登录
+5. 检查接口是否需要特定角色
+6. 将用户信息存储到UserContext中
+
+```java
+@Component
+@RequiredArgsConstructor
+public class AuthInterceptor implements HandlerInterceptor {
+
+    private final JwtUtils jwtUtils;
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // 如果不是处理器方法，直接放行
+        if (!(handler instanceof HandlerMethod)) {
+            return true;
+        }
+
+        HandlerMethod handlerMethod = (HandlerMethod) handler;
+        Method method = handlerMethod.getMethod();
+
+        // 获取类上的注解
+        RequireLogin classRequireLogin = handlerMethod.getBeanType().getAnnotation(RequireLogin.class);
+        RequireRoles classRequireRoles = handlerMethod.getBeanType().getAnnotation(RequireRoles.class);
+
+        // 获取方法上的注解
+        RequireLogin methodRequireLogin = method.getAnnotation(RequireLogin.class);
+        RequireRoles methodRequireRoles = method.getAnnotation(RequireRoles.class);
+
+        // 判断是否需要登录
+        boolean needLogin = classRequireLogin != null || methodRequireLogin != null || classRequireRoles != null || methodRequireRoles != null;
+
+        // 如果不需要登录，直接放行
+        if (!needLogin) {
+            return true;
+        }
+
+        // 从请求头中获取token
+        String token = request.getHeader("Authorization");
+        if (StringUtils.isBlank(token) || !token.startsWith("Bearer ")) {
+            throw new BusinessException(CommonErrorCode.UNAUTHORIZED, "未登录或token已过期");
+        }
+
+        // 去掉Bearer前缀
+        token = token.substring(7);
+
+        try {
+            // 验证token
+            if (!jwtUtils.validateAccessToken(token)) {
+                throw new BusinessException(CommonErrorCode.UNAUTHORIZED, "token已过期或无效");
+            }
+
+            // 从token中获取用户信息
+            Long userId = jwtUtils.getUserIdFromAccessToken(token);
+            String username = jwtUtils.getUsernameFromAccessToken(token);
+            String role = jwtUtils.getRoleFromAccessToken(token);
+
+            // 设置用户上下文
+            UserContext.setCurrentUserId(userId);
+            UserContext.setCurrentUsername(username);
+            UserContext.setCurrentRole(role);
+
+            // 判断是否需要特定角色
+            if (methodRequireRoles != null || classRequireRoles != null) {
+                String[] requiredRoles = methodRequireRoles != null ? methodRequireRoles.value() : classRequireRoles.value();
+                boolean hasRole = false;
+                for (String requiredRole : requiredRoles) {
+                    if (requiredRole.equals(role)) {
+                        hasRole = true;
+                        break;
+                    }
+                }
+                if (!hasRole) {
+                    throw new BusinessException(CommonErrorCode.FORBIDDEN, "权限不足");
+                }
+            }
+
+            return true;
+        } catch (Exception e) {
+            throw new BusinessException(CommonErrorCode.UNAUTHORIZED, "token验证失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        // 清除用户上下文
+        UserContext.clear();
+    }
+}
+```
+
+#### 拦截器配置
+
+位置：`src/main/java/com/xiaoyan/projectskeleton/common/config/WebMvcConfig.java`
+
+在WebMvcConfig中注册AuthInterceptor拦截器，并配置拦截路径。
+
+```java
+@Configuration
+public class WebMvcConfig implements WebMvcConfigurer {
+
+    private final AuthInterceptor authInterceptor;
+
+    public WebMvcConfig(AuthInterceptor authInterceptor) {
+        this.authInterceptor = authInterceptor;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(authInterceptor)
+                .addPathPatterns("/api/**")  // 拦截所有/api/下的请求
+                .excludePathPatterns(        // 排除不需要拦截的路径
+                        "/api/user/register",
+                        "/api/user/check-username",
+                        "/api/user/check-email",
+                        "/api/user/role/list",
+                        "/api/auth/login",
+                        "/api/auth/refresh-token"
+                );
+    }
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer.addPathPrefix("/api", c -> true);  // 为所有控制器添加/api前缀
+    }
+}
+```
+
+#### 使用示例
+
+1. **需要登录才能访问的接口**：
+
+```java
+@RestController
+@RequestMapping("/user")
+public class UserController {
+
+    @GetMapping("/profile")
+    @RequireLogin
+    public ApiResponse<UserProfileDTO> getUserProfile() {
+        Long userId = UserContext.getCurrentUserId();
+        return ApiResponse.success(userService.getUserProfile(userId));
+    }
+
+    @PutMapping("/profile")
+    @RequireLogin
+    public ApiResponse<Void> updateUserProfile(@RequestBody UserProfileDTO profileDTO) {
+        Long userId = UserContext.getCurrentUserId();
+        userService.updateUserProfile(userId, profileDTO);
+        return ApiResponse.success();
+    }
+}
+```
+
+2. **需要特定角色才能访问的接口**：
+
+```java
+@RestController
+@RequestMapping("/admin")
+public class AdminController {
+
+    @GetMapping("/users")
+    @RequireRoles({"ADMIN"})
+    public ApiResponse<List<UserDTO>> getAllUsers() {
+        // 只有ADMIN角色才能访问此接口
+        return ApiResponse.success(userService.getAllUsers());
+    }
+
+    @DeleteMapping("/user/{id}")
+    @RequireRoles({"ADMIN"})
+    public ApiResponse<Void> deleteUser(@PathVariable Long id) {
+        // 只有ADMIN角色才能访问此接口
+        userService.deleteUser(id);
+        return ApiResponse.success();
+    }
+}
+```
+
 ### BaseEntity
 
 位置：`src/main/java/com/xiaoyan/projectskeleton/repository/entity/BaseEntity.java`

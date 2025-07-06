@@ -2,6 +2,7 @@ package com.xiaoyan.projectskeleton.service.user;
 
 import com.xiaoyan.projectskeleton.repository.dto.user.JwtTokenDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserLoginDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 
@@ -23,6 +24,19 @@ public interface UserService {
      * @return JWT令牌
      */
     JwtTokenDTO login(UserLoginDTO loginDTO);
+    
+    /**
+     * 获取当前登录用户的资料
+     * @return 用户资料
+     */
+    UserProfileDTO getCurrentUserProfile();
+    
+    /**
+     * 根据用户ID获取用户资料
+     * @param userId 用户ID
+     * @return 用户资料
+     */
+    UserProfileDTO getUserProfileById(Long userId);
     
     /**
      * 检查用户名是否已存在

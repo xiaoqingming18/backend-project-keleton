@@ -278,3 +278,139 @@
 | data[].description | String | 角色描述 |
 | data[].sort | Integer | 排序 |
 | data[].createTime | String | 创建时间 | 
+
+## 6. 获取当前登录用户资料接口
+
+### 接口信息
+
+- **接口路径**：`/user/profile`
+- **请求方式**：GET
+- **接口描述**：获取当前登录用户的资料信息
+- **权限要求**：需要登录，不限制角色
+
+### 请求参数
+
+无
+
+### 请求头
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| Authorization | String | 是 | 访问令牌，格式为"Bearer {accessToken}" |
+
+### 响应参数
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取用户资料成功",
+  "data": {
+    "userId": 1,
+    "username": "testuser",
+    "nickname": "测试用户",
+    "email": "test@example.com",
+    "mobile": "13800138000",
+    "avatar": "https://example.com/avatar.jpg",
+    "roleName": "普通用户",
+    "roleCode": "USER",
+    "status": 1,
+    "lastLoginTime": "2023-07-06 16:30:00"
+  }
+}
+```
+
+| 参数名 | 类型 | 说明 |
+| --- | --- | --- |
+| code | Integer | 状态码，200表示成功 |
+| success | Boolean | 是否成功 |
+| message | String | 提示信息 |
+| data | Object | 用户资料信息 |
+| data.userId | Long | 用户ID |
+| data.username | String | 用户名 |
+| data.nickname | String | 昵称 |
+| data.email | String | 邮箱 |
+| data.mobile | String | 手机号码 |
+| data.avatar | String | 头像URL |
+| data.roleName | String | 角色名称 |
+| data.roleCode | String | 角色编码 |
+| data.status | Integer | 账号状态：0-未激活，1-正常，2-封禁 |
+| data.lastLoginTime | String | 最后登录时间 |
+
+### 错误码
+
+| 错误码 | 说明 |
+| --- | --- |
+| 10005 | 用户不存在 |
+| 401 | 未授权 |
+| 500 | 服务器内部错误 |
+
+## 7. 获取指定用户资料接口
+
+### 接口信息
+
+- **接口路径**：`/user/profile/{userId}`
+- **请求方式**：GET
+- **接口描述**：获取指定用户的资料信息
+- **权限要求**：需要登录，不限制角色
+
+### 请求参数
+
+#### 路径参数
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| userId | Long | 是 | 用户ID |
+
+### 请求头
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| Authorization | String | 是 | 访问令牌，格式为"Bearer {accessToken}" |
+
+### 响应参数
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取用户资料成功",
+  "data": {
+    "userId": 1,
+    "username": "testuser",
+    "nickname": "测试用户",
+    "email": "test@example.com",
+    "mobile": "13800138000",
+    "avatar": "https://example.com/avatar.jpg",
+    "roleName": "普通用户",
+    "roleCode": "USER",
+    "status": 1,
+    "lastLoginTime": "2023-07-06 16:30:00"
+  }
+}
+```
+
+| 参数名 | 类型 | 说明 |
+| --- | --- | --- |
+| code | Integer | 状态码，200表示成功 |
+| success | Boolean | 是否成功 |
+| message | String | 提示信息 |
+| data | Object | 用户资料信息 |
+| data.userId | Long | 用户ID |
+| data.username | String | 用户名 |
+| data.nickname | String | 昵称 |
+| data.email | String | 邮箱 |
+| data.mobile | String | 手机号码 |
+| data.avatar | String | 头像URL |
+| data.roleName | String | 角色名称 |
+| data.roleCode | String | 角色编码 |
+| data.status | Integer | 账号状态：0-未激活，1-正常，2-封禁 |
+| data.lastLoginTime | String | 最后登录时间 |
+
+### 错误码
+
+| 错误码 | 说明 |
+| --- | --- |
+| 10005 | 用户不存在 |
+| 401 | 未授权 |
+| 500 | 服务器内部错误 | 

@@ -1,8 +1,10 @@
 package com.xiaoyan.projectskeleton.controller.user;
 
+import com.xiaoyan.projectskeleton.common.annotation.RequireLogin;
 import com.xiaoyan.projectskeleton.common.util.ApiResponse;
 import com.xiaoyan.projectskeleton.repository.dto.user.JwtTokenDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserLoginDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 import com.xiaoyan.projectskeleton.service.user.UserService;
@@ -44,6 +46,31 @@ public class UserController {
         log.info("用户登录: {}", loginDTO.getUsername());
         JwtTokenDTO jwtTokenDTO = userService.login(loginDTO);
         return ApiResponse.success(jwtTokenDTO, "登录成功");
+    }
+    
+    /**
+     * 获取当前登录用户的资料
+     * @return 用户资料
+     */
+    @GetMapping("/profile")
+    @RequireLogin
+    public ApiResponse<UserProfileDTO> getCurrentUserProfile() {
+        log.info("获取当前登录用户的资料");
+        UserProfileDTO profileDTO = userService.getCurrentUserProfile();
+        return ApiResponse.success(profileDTO, "获取用户资料成功");
+    }
+    
+    /**
+     * 获取指定用户的资料
+     * @param userId 用户ID
+     * @return 用户资料
+     */
+    @GetMapping("/profile/{userId}")
+    @RequireLogin
+    public ApiResponse<UserProfileDTO> getUserProfile(@PathVariable Long userId) {
+        log.info("获取用户资料: {}", userId);
+        UserProfileDTO profileDTO = userService.getUserProfileById(userId);
+        return ApiResponse.success(profileDTO, "获取用户资料成功");
     }
     
     /**

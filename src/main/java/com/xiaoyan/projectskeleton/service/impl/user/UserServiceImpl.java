@@ -3,6 +3,8 @@ package com.xiaoyan.projectskeleton.service.impl.user;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyan.projectskeleton.common.config.JwtConfig;
+import com.xiaoyan.projectskeleton.common.context.UserContext;
+import com.xiaoyan.projectskeleton.common.exception.BusinessException;
 import com.xiaoyan.projectskeleton.common.exception.ExceptionUtils;
 import com.xiaoyan.projectskeleton.common.exception.UserErrorCode;
 import com.xiaoyan.projectskeleton.common.util.JwtUtils;
@@ -11,6 +13,7 @@ import com.xiaoyan.projectskeleton.mapper.user.UserMapper;
 import com.xiaoyan.projectskeleton.mapper.user.UserProfileMapper;
 import com.xiaoyan.projectskeleton.repository.dto.user.JwtTokenDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserLoginDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.Role;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
@@ -21,6 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.time.format.DateTimeFormatter;
 
 /**
  * 用户服务实现类
@@ -148,6 +153,71 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .accessTokenExpiresIn(jwtConfig.getAccessTokenExpiration())
                 .tokenType("Bearer")
                 .build();
+    }
+    
+    /**
+     * 获取当前登录用户的资料
+     * @return 用户资料
+     */
+    @Override
+    public UserProfileDTO getCurrentUserProfile() {
+        // 1. 获取当前登录用户信息
+        UserContext userContext = UserContext.getCurrentUser();
+        if (userContext == null) {
+            throw new BusinessException(UserErrorCode.USER_NOT_EXISTS, "用户未登录");
+        }
+        
+        // 2. 获取用户资料
+        return getUserProfileById(userContext.getUserId());
+    }
+    
+    /**
+     * 根据用户ID获取用户资料
+     * @param userId 用户ID
+     * @return 用户资料
+     */
+    @Override
+    public UserProfileDTO getUserProfileById(Long userId) {
+        // 1. 获取用户基本信息
+        User user = userMapper.selectById(userId);
+        ExceptionUtils.assertNotNull(user, UserErrorCode.USER_NOT_EXISTS);
+        
+        // 2. 获取用户资料
+        LambdaQueryWrapper<UserProfile> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(UserProfile::getUserId, userId);
+        UserProfile userProfile = userProfileMapper.selectOne(queryWrapper);
+        
+        // 3. 获取角色信息
+        Role role = roleMapper.selectById(user.getRoleId());
+        
+        // 4. 构建用户资料DTO
+        UserProfileDTO profileDTO = new UserProfileDTO();
+        profileDTO.setUserId(user.getId());
+        profileDTO.setUsername(user.getUsername());
+        profileDTO.setEmail(user.getEmail());
+        profileDTO.setMobile(user.getMobile());
+        profileDTO.setAvatar(user.getAvatar());
+        profileDTO.setStatus(user.getStatus());
+        
+        // 设置最后登录时间
+        if (user.getLastLoginTime() != null) {
+            profileDTO.setLastLoginTime(user.getLastLoginTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        }
+        
+        // 设置角色信息
+        if (role != null) {
+            profileDTO.setRoleName(role.getName());
+            profileDTO.setRoleCode(role.getCode());
+        }
+        
+        // 设置用户资料信息
+        if (userProfile != null) {
+            profileDTO.setNickname(userProfile.getNickname());
+        } else {
+            profileDTO.setNickname(user.getUsername());
+        }
+        
+        return profileDTO;
     }
     
     /**
