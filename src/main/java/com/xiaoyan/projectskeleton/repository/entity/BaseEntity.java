@@ -53,11 +53,13 @@ public class BaseEntity implements Serializable {
      * 逻辑删除标记（0：未删除，1：已删除）
      */
     @TableLogic
+    @TableField(fill = FieldFill.INSERT)
     private Integer deleted;
 
     /**
      * 版本号（乐观锁）
      */
     @Version
+    @TableField(fill = FieldFill.INSERT)
     private Integer version;
 } 

@@ -1,6 +1,6 @@
 package com.xiaoyan.projectskeleton.service;
 
-import com.xiaoyan.projectskeleton.repository.dto.RoleDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.RoleDTO;
 
 import java.util.List;
 

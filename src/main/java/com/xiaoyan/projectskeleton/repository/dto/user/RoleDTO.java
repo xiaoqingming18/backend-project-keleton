@@ -1,4 +1,4 @@
-package com.xiaoyan.projectskeleton.repository.dto;
+package com.xiaoyan.projectskeleton.repository.dto.user;
 
 import lombok.Data;
 

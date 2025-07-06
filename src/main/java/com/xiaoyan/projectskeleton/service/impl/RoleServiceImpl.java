@@ -2,9 +2,9 @@ package com.xiaoyan.projectskeleton.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.xiaoyan.projectskeleton.mapper.RoleMapper;
-import com.xiaoyan.projectskeleton.repository.dto.RoleDTO;
-import com.xiaoyan.projectskeleton.repository.entity.Role;
+import com.xiaoyan.projectskeleton.mapper.user.RoleMapper;
+import com.xiaoyan.projectskeleton.repository.dto.user.RoleDTO;
+import com.xiaoyan.projectskeleton.repository.entity.user.Role;
 import com.xiaoyan.projectskeleton.service.RoleService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;

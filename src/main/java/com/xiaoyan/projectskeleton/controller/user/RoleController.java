@@ -1,7 +1,7 @@
 package com.xiaoyan.projectskeleton.controller.user;
 
 import com.xiaoyan.projectskeleton.common.util.ApiResponse;
-import com.xiaoyan.projectskeleton.repository.dto.RoleDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.RoleDTO;
 import com.xiaoyan.projectskeleton.service.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

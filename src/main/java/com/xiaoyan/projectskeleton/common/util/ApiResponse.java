@@ -54,6 +54,17 @@ public class ApiResponse<T> implements Serializable {
      * 成功返回结果
      *
      * @param data    获取的数据
+     * @param <T>     数据泛型
+     * @return 通用返回结果
+     */
+    public static <T> ApiResponse<T> success(T data) {
+        return new ApiResponse<>(200, true, "操作成功", data);
+    }
+
+    /**
+     * 成功返回结果
+     *
+     * @param data    获取的数据
      * @param message 提示信息
      * @param <T>     数据泛型
      * @return 通用返回结果
