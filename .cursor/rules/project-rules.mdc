@@ -16,12 +16,11 @@ alwaysApply: true
 
 # 第三步：编写代码
 - 编写代码时需要加入详细的注释与文档注释，且使用中文；
-- 所有控制器放入 `controller` 目录下，且分服务模块存放，避免文件组织混乱；
-- 所有服务层接口放入 `service` 目录下，且分服务模块存放，避免文件组织混乱；
-- 所有服务层实现类放入 `service/impl` 目录下，且分服务模块存放，避免文件组织混乱；
-- 所有 dto 文件放入 `repository/dto` 目录下，且分服务模块存放，避免文件组织混乱；
-- 所有 entity 文件放入 `repository/entity` 目录下，且分服务模块存放，避免文件组织混乱；
-- 所有 mapper 层文件放入 `mapper` 目录下，且分服务模块存放，避免文件组织混乱；
+- 所有控制器放入 `controller` 目录下，且分服务模块存放，避免文件组织混乱，绝对不允许直接在 `controller` 目录下存放文件；
+- 所有服务层接口放入 `service` 目录下，且分服务模块存放，避免文件组织混乱，绝对不允许直接在 `service` 目录下存放文件；
+- 所有服务层实现类放入 `service/impl` 目录下，且分服务模块存放，避免文件组织混乱，绝对不允许直接在 `service/impl` 目录下存放文件；
+- 所有 dto 文件放入 `repository/dto` 目录下，且分服务模块存放，避免文件组织混乱，绝对不允许直接在 `repository/dto` 目录下存放文件；
+- 所有 entity 文件放入 `repository/entity` 目录下，且分服务模块存放，避免文件组织混乱，绝对不允许直接在 `repository/entity` 目录下存放文件；
 - 所有工具类放入 `common/util` 目录下；
 
 - 所有配置文件放入 `common/config` 目录下；

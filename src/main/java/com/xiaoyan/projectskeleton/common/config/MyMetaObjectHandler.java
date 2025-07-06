@@ -17,12 +17,12 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
      */
     @Override
     public void insertFill(MetaObject metaObject) {
-        this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
-        this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-        this.strictInsertFill(metaObject, "createBy", String.class, "system");
-        this.strictInsertFill(metaObject, "updateBy", String.class, "system");
-        this.strictInsertFill(metaObject, "deleted", Integer.class, 0);
-        this.strictInsertFill(metaObject, "version", Integer.class, 1);
+        this.setFieldValByName("createTime", LocalDateTime.now(), metaObject);
+        this.setFieldValByName("updateTime", LocalDateTime.now(), metaObject);
+        this.setFieldValByName("createBy", "system", metaObject);
+        this.setFieldValByName("updateBy", "system", metaObject);
+        this.setFieldValByName("deleted", 0, metaObject);
+        this.setFieldValByName("version", 1, metaObject);
     }
 
     /**
@@ -30,7 +30,7 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
      */
     @Override
     public void updateFill(MetaObject metaObject) {
-        this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-        this.strictUpdateFill(metaObject, "updateBy", String.class, "system");
+        this.setFieldValByName("updateTime", LocalDateTime.now(), metaObject);
+        this.setFieldValByName("updateBy", "system", metaObject);
     }
 } 
