@@ -117,6 +117,59 @@ MyBatis-Plus 配置类，包含以下功能：
 
 用于自动填充实体类中的特定字段，如创建时间、更新时间等。
 
+### 乐观锁机制
+
+项目中实现了基于 MyBatis-Plus 的乐观锁机制，用于处理并发操作时的数据一致性问题。
+
+#### 实现方式
+
+1. **实体类配置**：
+   - 所有实体类继承 `BaseEntity`，包含 `@Version` 注解的 `version` 字段
+   - 初始值为 1，每次更新自动加 1
+
+2. **插件配置**：
+   - 在 `MybatisPlusConfig` 中注册了 `OptimisticLockerInnerInterceptor` 插件
+
+3. **工作原理**：
+   - 当执行更新操作时，会自动检查 `version` 字段
+   - 如果数据库中的 `version` 与当前实体的 `version` 不一致，表示数据已被其他操作修改
+   - 此时更新会失败，抛出异常，防止数据覆盖
+
+#### 使用方式
+
+使用乐观锁时，只需要确保实体类继承了 `BaseEntity` 即可，无需额外代码：
+
+```java
+// 1. 查询实体
+User user = userMapper.selectById(1L);  // 假设 version=1
+
+// 2. 修改实体
+user.setUsername("newUsername");
+
+// 3. 更新实体
+// 此时会自动检查version字段，并在更新时将version加1
+userMapper.updateById(user);  // 成功更新后，数据库中 version=2
+```
+
+#### 并发冲突处理
+
+当发生并发冲突时（即其他操作先一步修改了数据），可以通过以下方式处理：
+
+```java
+try {
+    int rows = userMapper.updateById(user);
+    if (rows == 0) {
+        // 更新失败，说明数据已被修改
+        // 重新获取最新数据
+        user = userMapper.selectById(user.getId());
+        // 进行必要的业务处理...
+    }
+} catch (Exception e) {
+    // 处理异常
+    log.error("数据更新失败，可能存在并发冲突", e);
+}
+```
+
 ## 项目服务模块
 
 目前项目包含以下服务模块：
@@ -136,6 +189,11 @@ MyBatis-Plus 配置类，包含以下功能：
    - 字段自动填充
    - 逻辑删除
    - 乐观锁
+
+4. **用户服务模块**
+   - 用户基础信息管理
+   - 用户资料管理
+   - 角色权限管理
 
 项目仍在开发中，后续将添加更多功能模块，如用户认证、权限管理等。
 
