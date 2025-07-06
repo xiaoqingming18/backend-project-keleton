@@ -326,6 +326,23 @@ public User register(UserRegisterDTO registerDTO) {
 - 商品模块：300xx
 - 支付模块：400xx
 
+#### HTTP错误处理
+
+系统已配置全局异常处理器，可以处理以下HTTP错误：
+
+- **404 Not Found**：当请求的接口不存在时，返回404错误码和友好提示
+- **405 Method Not Allowed**：当请求方法不支持时，返回405错误码和支持的方法列表
+- **400 Bad Request**：处理参数校验失败、参数类型不匹配、请求体解析错误等情况
+- **500 Internal Server Error**：处理未预期的系统异常
+
+相关配置位于 `application.properties`：
+```properties
+# 出现错误时抛出NoHandlerFoundException异常
+spring.mvc.throw-exception-if-no-handler-found=true
+# 禁用静态资源处理，防止静态资源被当作接口处理
+spring.web.resources.add-mappings=false
+```
+
 ### MyBatis-Plus 3.5.9 版本特性
 
 从 MyBatis-Plus 3.5.9 版本开始，部分功能被拆分到单独的模块中：
