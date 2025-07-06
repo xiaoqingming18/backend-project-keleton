@@ -28,7 +28,8 @@ public class UserController {
     @PostMapping("/register")
     public ApiResponse<User> register(@RequestBody @Validated UserRegisterDTO registerDTO) {
         log.info("用户注册: {}", registerDTO.getUsername());
-        return userService.register(registerDTO);
+        User user = userService.register(registerDTO);
+        return ApiResponse.success(user, "注册成功");
     }
     
     /**

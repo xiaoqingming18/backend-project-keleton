@@ -1,6 +1,5 @@
 package com.xiaoyan.projectskeleton.service.user;
 
-import com.xiaoyan.projectskeleton.common.util.ApiResponse;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 
@@ -12,9 +11,9 @@ public interface UserService {
     /**
      * 用户注册
      * @param registerDTO 注册信息
-     * @return 注册结果
+     * @return 注册成功的用户
      */
-    ApiResponse<User> register(UserRegisterDTO registerDTO);
+    User register(UserRegisterDTO registerDTO);
     
     /**
      * 检查用户名是否已存在

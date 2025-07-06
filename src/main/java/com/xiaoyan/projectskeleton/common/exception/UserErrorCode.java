@@ -1,0 +1,71 @@
+package com.xiaoyan.projectskeleton.common.exception;
+
+import lombok.Getter;
+
+/**
+ * 用户模块错误码枚举
+ * 用户模块错误码以 100 开头
+ */
+@Getter
+public enum UserErrorCode implements ErrorCode {
+
+    /**
+     * 用户名已存在
+     */
+    USERNAME_ALREADY_EXISTS(10001, "用户名已存在"),
+
+    /**
+     * 密码不一致
+     */
+    PASSWORD_NOT_MATCH(10002, "两次输入的密码不一致"),
+
+    /**
+     * 邮箱已被注册
+     */
+    EMAIL_ALREADY_EXISTS(10003, "邮箱已被注册"),
+
+    /**
+     * 手机号已被注册
+     */
+    MOBILE_ALREADY_EXISTS(10004, "手机号已被注册"),
+
+    /**
+     * 用户不存在
+     */
+    USER_NOT_EXISTS(10005, "用户不存在"),
+
+    /**
+     * 密码错误
+     */
+    PASSWORD_ERROR(10006, "密码错误"),
+
+    /**
+     * 账号已被禁用
+     */
+    ACCOUNT_DISABLED(10007, "账号已被禁用"),
+
+    /**
+     * 账号未激活
+     */
+    ACCOUNT_NOT_ACTIVATED(10008, "账号未激活"),
+
+    /**
+     * 角色不存在
+     */
+    ROLE_NOT_EXISTS(10009, "角色不存在");
+
+    /**
+     * 错误码
+     */
+    private final Integer code;
+
+    /**
+     * 错误信息
+     */
+    private final String message;
+
+    UserErrorCode(Integer code, String message) {
+        this.code = code;
+        this.message = message;
+    }
+} 

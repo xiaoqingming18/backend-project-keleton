@@ -2,7 +2,8 @@ package com.xiaoyan.projectskeleton.service.impl.user;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.xiaoyan.projectskeleton.common.util.ApiResponse;
+import com.xiaoyan.projectskeleton.common.exception.ExceptionUtils;
+import com.xiaoyan.projectskeleton.common.exception.UserErrorCode;
 import com.xiaoyan.projectskeleton.mapper.user.RoleMapper;
 import com.xiaoyan.projectskeleton.mapper.user.UserMapper;
 import com.xiaoyan.projectskeleton.mapper.user.UserProfileMapper;
@@ -45,19 +46,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ApiResponse<User> register(UserRegisterDTO registerDTO) {
+    public User register(UserRegisterDTO registerDTO) {
         // 1. 校验用户名和邮箱是否已存在
-        if (checkUsernameExists(registerDTO.getUsername())) {
-            return ApiResponse.failed(400, "用户名已存在");
-        }
-        if (checkEmailExists(registerDTO.getEmail())) {
-            return ApiResponse.failed(400, "邮箱已被注册");
-        }
+        ExceptionUtils.assertFalse(checkUsernameExists(registerDTO.getUsername()), 
+                UserErrorCode.USERNAME_ALREADY_EXISTS);
+        
+        ExceptionUtils.assertFalse(checkEmailExists(registerDTO.getEmail()), 
+                UserErrorCode.EMAIL_ALREADY_EXISTS);
         
         // 2. 校验密码是否一致
-        if (!registerDTO.getPassword().equals(registerDTO.getConfirmPassword())) {
-            return ApiResponse.failed(400, "两次输入的密码不一致");
-        }
+        ExceptionUtils.assertTrue(registerDTO.getPassword().equals(registerDTO.getConfirmPassword()), 
+                UserErrorCode.PASSWORD_NOT_MATCH);
         
         // 3. 获取角色ID
         String roleCode = StringUtils.hasText(registerDTO.getUserRole()) ? 
@@ -66,9 +65,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (role == null) {
             log.warn("角色编码 {} 不存在，使用默认角色", roleCode);
             role = roleMapper.findByCode(DEFAULT_ROLE_CODE);
-            if (role == null) {
-                return ApiResponse.failed(500, "系统错误：默认角色不存在");
-            }
+            ExceptionUtils.assertNotNull(role, UserErrorCode.ROLE_NOT_EXISTS);
         }
         
         // 4. 创建用户
@@ -93,7 +90,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 7. 保存用户资料
         userProfileMapper.insert(userProfile);
         
-        return ApiResponse.success(user, "注册成功");
+        return user;
     }
     
     /**
