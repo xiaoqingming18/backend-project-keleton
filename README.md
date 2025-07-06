@@ -181,6 +181,7 @@ try {
 
 2. **通用工具**
    - API 响应封装
+   - 业务异常处理工具
 
 3. **数据访问层**
    - MyBatis-Plus 3.5.9
@@ -216,6 +217,114 @@ try {
 - Maven
 
 ## 特别说明
+
+### 业务异常处理工具
+
+业务异常处理工具是一套用于处理业务异常的工具类，提供了统一的异常处理机制，使业务代码更加简洁、清晰。
+
+#### 核心组件
+
+1. **BusinessException**
+
+   业务异常基类，继承自 `RuntimeException`，用于表示业务异常。包含错误码和错误信息。
+
+   ```java
+   // 使用错误码枚举创建业务异常
+   throw new BusinessException(UserErrorCode.USERNAME_ALREADY_EXISTS);
+   
+   // 使用错误码和自定义错误信息创建业务异常
+   throw new BusinessException(UserErrorCode.USERNAME_ALREADY_EXISTS, "用户名 " + username + " 已存在");
+   
+   // 使用自定义错误码和错误信息创建业务异常
+   throw new BusinessException(10001, "用户名已存在");
+   ```
+
+2. **ErrorCode 接口**
+
+   错误码接口，定义了获取错误码和错误信息的方法。
+
+   ```java
+   public interface ErrorCode {
+       Integer getCode();
+       String getMessage();
+   }
+   ```
+
+3. **错误码枚举**
+
+   - **CommonErrorCode**：通用错误码枚举，定义了系统通用的错误码
+   - **UserErrorCode**：用户模块错误码枚举，定义了用户模块特有的错误码（以 100 开头）
+
+4. **ExceptionUtils**
+
+   异常工具类，提供了一系列静态方法，用于方便地抛出业务异常和进行断言。
+
+   ```java
+   // 断言为真，否则抛出业务异常
+   ExceptionUtils.assertTrue(password.equals(confirmPassword), UserErrorCode.PASSWORD_NOT_MATCH);
+   
+   // 断言为假，否则抛出业务异常
+   ExceptionUtils.assertFalse(userService.checkUsernameExists(username), UserErrorCode.USERNAME_ALREADY_EXISTS);
+   
+   // 断言对象不为空，否则抛出业务异常
+   ExceptionUtils.assertNotNull(user, UserErrorCode.USER_NOT_EXISTS);
+   ```
+
+5. **GlobalExceptionHandler**
+
+   全局异常处理器，用于捕获并处理系统中的各类异常，将其转换为统一的响应格式返回给客户端。
+
+#### 错误码设计
+
+1. **通用错误码**（HTTP 标准错误码）
+   - 400：参数错误
+   - 401：未授权
+   - 403：禁止访问
+   - 404：资源不存在
+   - 500：服务器内部错误
+
+2. **用户模块错误码**（以 100 开头）
+   - 10001：用户名已存在
+   - 10002：两次输入的密码不一致
+   - 10003：邮箱已被注册
+   - 10004：手机号已被注册
+   - 10005：用户不存在
+   - 10006：密码错误
+   - 10007：账号已被禁用
+   - 10008：账号未激活
+   - 10009：角色不存在
+
+#### 使用示例
+
+在服务层使用异常工具类处理业务异常：
+
+```java
+@Override
+public User register(UserRegisterDTO registerDTO) {
+    // 校验用户名是否已存在
+    ExceptionUtils.assertFalse(checkUsernameExists(registerDTO.getUsername()), 
+            UserErrorCode.USERNAME_ALREADY_EXISTS);
+    
+    // 校验邮箱是否已存在
+    ExceptionUtils.assertFalse(checkEmailExists(registerDTO.getEmail()), 
+            UserErrorCode.EMAIL_ALREADY_EXISTS);
+    
+    // 校验密码是否一致
+    ExceptionUtils.assertTrue(registerDTO.getPassword().equals(registerDTO.getConfirmPassword()), 
+            UserErrorCode.PASSWORD_NOT_MATCH);
+    
+    // ... 其他业务逻辑
+}
+```
+
+#### 扩展
+
+如果需要为其他模块添加错误码，只需要创建新的错误码枚举类，实现 `ErrorCode` 接口即可，建议按模块划分错误码前缀：
+
+- 用户模块：100xx
+- 订单模块：200xx
+- 商品模块：300xx
+- 支付模块：400xx
 
 ### MyBatis-Plus 3.5.9 版本特性
 
