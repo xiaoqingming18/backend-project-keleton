@@ -87,7 +87,12 @@ public enum UserErrorCode implements ErrorCode {
     /**
      * 验证码发送过于频繁
      */
-    VERIFICATION_CODE_SEND_TOO_FREQUENTLY(10016, "验证码发送过于频繁，请稍后再试");
+    VERIFICATION_CODE_SEND_TOO_FREQUENTLY(10016, "验证码发送过于频繁，请稍后再试"),
+    
+    /**
+     * 用户未登录
+     */
+    USER_NOT_LOGIN(10017, "用户未登录");
 
     /**
      * 错误码

@@ -115,8 +115,9 @@ public class UserController {
      * @return 重置结果
      */
     @PostMapping("/password/reset")
+    @RequireLogin
     public ApiResponse<Void> resetPassword(@RequestBody @Validated PasswordResetVerifyDTO verifyDTO) {
-        log.info("验证验证码并重置密码: {}", verifyDTO.getEmail());
+        log.info("验证验证码并重置密码");
         userService.verifyCodeAndResetPassword(verifyDTO);
         return ApiResponse.success(null, "密码重置成功");
     }

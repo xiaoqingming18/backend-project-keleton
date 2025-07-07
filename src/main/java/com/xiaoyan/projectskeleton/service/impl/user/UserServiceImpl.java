@@ -543,16 +543,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void verifyCodeAndResetPassword(PasswordResetVerifyDTO verifyDTO) {
-        String email = verifyDTO.getEmail();
+        // 1. 从当前登录用户上下文中获取邮箱
+        UserContext userContext = UserContext.getCurrentUser();
+        ExceptionUtils.assertNotNull(userContext, UserErrorCode.USER_NOT_LOGIN);
+        
+        User currentUser = userMapper.selectById(userContext.getUserId());
+        ExceptionUtils.assertNotNull(currentUser, UserErrorCode.USER_NOT_EXISTS);
+        
+        String email = currentUser.getEmail();
         String code = verifyDTO.getCode();
         String newPassword = verifyDTO.getNewPassword();
         String confirmPassword = verifyDTO.getConfirmPassword();
-        
-        // 1. 检查邮箱是否存在
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(User::getEmail, email);
-        User user = userMapper.selectOne(queryWrapper);
-        ExceptionUtils.assertNotNull(user, UserErrorCode.EMAIL_NOT_EXISTS);
         
         // 2. 检查新密码和确认密码是否一致
         ExceptionUtils.assertTrue(newPassword.equals(confirmPassword), 
@@ -572,13 +573,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         
         // 5. 更新密码
         // 实际项目中应该对密码进行加密处理
-        user.setPassword(newPassword);
-        userMapper.updateById(user);
+        currentUser.setPassword(newPassword);
+        userMapper.updateById(currentUser);
         
         // 6. 删除Redis中的验证码
         redisUtils.delete(codeKey);
         
-        log.info("用户 {} 成功重置密码", user.getUsername());
+        log.info("用户 {} 成功重置密码", currentUser.getUsername());
     }
     
     /**
