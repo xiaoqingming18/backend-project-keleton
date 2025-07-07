@@ -52,7 +52,22 @@ public enum UserErrorCode implements ErrorCode {
     /**
      * 角色不存在
      */
-    ROLE_NOT_EXISTS(10009, "角色不存在");
+    ROLE_NOT_EXISTS(10009, "角色不存在"),
+    
+    /**
+     * 操作不允许
+     */
+    OPERATION_NOT_ALLOWED(10010, "操作不允许"),
+    
+    /**
+     * 账号已被封禁
+     */
+    ACCOUNT_ALREADY_BANNED(10011, "账号已被封禁"),
+    
+    /**
+     * 无权限操作
+     */
+    NO_PERMISSION(10012, "无权限进行此操作");
 
     /**
      * 错误码

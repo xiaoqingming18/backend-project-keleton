@@ -413,4 +413,172 @@
 | --- | --- |
 | 10005 | 用户不存在 |
 | 401 | 未授权 |
-| 500 | 服务器内部错误 | 
+| 500 | 服务器内部错误 |
+
+## 管理员操作接口
+
+以下接口需要管理员权限，只有角色为ADMIN的用户才能访问。
+
+### 1. 获取所有用户列表
+
+- **接口路径**: `/api/user/admin/list`
+- **请求方式**: GET
+- **接口说明**: 获取系统中所有用户的信息列表
+- **请求头**: 需要在Authorization头中携带有效的Token，且用户角色必须是ADMIN
+
+**响应示例**:
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "获取用户列表成功",
+  "data": [
+    {
+      "userId": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "mobile": "13800138000",
+      "nickname": "系统管理员",
+      "avatar": "https://example.com/avatar.jpg",
+      "status": 1,
+      "lastLoginTime": "2023-07-01 12:30:45",
+      "roleName": "管理员",
+      "roleCode": "ADMIN"
+    },
+    {
+      "userId": 2,
+      "username": "user",
+      "email": "user@example.com",
+      "mobile": "13900139000",
+      "nickname": "普通用户",
+      "avatar": null,
+      "status": 1,
+      "lastLoginTime": "2023-07-02 10:20:30",
+      "roleName": "普通用户",
+      "roleCode": "USER"
+    }
+  ]
+}
+```
+
+### 2. 禁用用户
+
+- **接口路径**: `/api/user/admin/{userId}/disable`
+- **请求方式**: PUT
+- **接口说明**: 将用户状态修改为"封禁"状态，使其无法登录系统
+- **路径参数**: 
+  - `userId`: 用户ID，必填
+- **请求头**: 需要在Authorization头中携带有效的Token，且用户角色必须是ADMIN
+
+**响应示例**:
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "禁用用户成功",
+  "data": null
+}
+```
+
+### 3. 启用用户
+
+- **接口路径**: `/api/user/admin/{userId}/enable`
+- **请求方式**: PUT
+- **接口说明**: 将用户状态修改为"正常"状态，使其可以正常登录系统
+- **路径参数**: 
+  - `userId`: 用户ID，必填
+- **请求头**: 需要在Authorization头中携带有效的Token，且用户角色必须是ADMIN
+
+**响应示例**:
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "启用用户成功",
+  "data": null
+}
+```
+
+### 4. 封禁用户
+
+- **接口路径**: `/api/user/admin/{userId}/ban`
+- **请求方式**: PUT
+- **接口说明**: 封禁用户，可以指定封禁原因
+- **路径参数**: 
+  - `userId`: 用户ID，必填
+- **查询参数**:
+  - `reason`: 封禁原因，可选
+- **请求头**: 需要在Authorization头中携带有效的Token，且用户角色必须是ADMIN
+
+**响应示例**:
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "封禁用户成功",
+  "data": null
+}
+```
+
+### 5. 解封用户
+
+- **接口路径**: `/api/user/admin/{userId}/unban`
+- **请求方式**: PUT
+- **接口说明**: 解除用户的封禁状态
+- **路径参数**: 
+  - `userId`: 用户ID，必填
+- **请求头**: 需要在Authorization头中携带有效的Token，且用户角色必须是ADMIN
+
+**响应示例**:
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "解封用户成功",
+  "data": null
+}
+```
+
+### 6. 删除用户
+
+- **接口路径**: `/api/user/admin/{userId}`
+- **请求方式**: DELETE
+- **接口说明**: 删除指定用户（逻辑删除）
+- **路径参数**: 
+  - `userId`: 用户ID，必填
+- **请求头**: 需要在Authorization头中携带有效的Token，且用户角色必须是ADMIN
+
+**响应示例**:
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "删除用户成功",
+  "data": null
+}
+```
+
+## 错误码说明
+
+| 错误码 | 说明 |
+| ------ | ---- |
+| 400 | 参数错误 |
+| 401 | 未授权，未登录或Token已过期 |
+| 403 | 权限不足 |
+| 10001 | 用户名已存在 |
+| 10002 | 两次输入的密码不一致 |
+| 10003 | 邮箱已被注册 |
+| 10004 | 手机号已被注册 |
+| 10005 | 用户不存在 |
+| 10006 | 密码错误 |
+| 10007 | 账号已被禁用 |
+| 10008 | 账号未激活 |
+| 10010 | 操作不允许 |
+| 10011 | 账号已被封禁 |
+| 10012 | 无权限进行此操作 | 

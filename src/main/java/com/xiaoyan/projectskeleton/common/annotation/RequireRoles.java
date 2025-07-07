@@ -1,5 +1,6 @@
 package com.xiaoyan.projectskeleton.common.annotation;
 
+import com.xiaoyan.projectskeleton.common.enums.RoleEnum;
 import java.lang.annotation.*;
 
 /**
@@ -11,10 +12,10 @@ import java.lang.annotation.*;
 @Documented
 public @interface RequireRoles {
     /**
-     * 允许访问的角色编码列表
+     * 允许访问的角色枚举列表
      * 为空时表示不限制角色
      */
-    String[] value() default {};
+    RoleEnum[] value() default {};
     
     /**
      * 逻辑类型

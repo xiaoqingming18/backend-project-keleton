@@ -6,6 +6,8 @@ import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 
+import java.util.List;
+
 /**
  * 用户服务接口
  */
@@ -58,4 +60,41 @@ public interface UserService {
      * @return 用户对象
      */
     User getById(Long id);
+    
+    /**
+     * 封禁用户
+     * @param userId 用户ID
+     * @param reason 封禁原因（可选）
+     */
+    void banUser(Long userId, String reason);
+    
+    /**
+     * 解封用户
+     * @param userId 用户ID
+     */
+    void unbanUser(Long userId);
+    
+    /**
+     * 获取所有用户列表
+     * @return 用户列表
+     */
+    List<UserProfileDTO> listAllUsers();
+    
+    /**
+     * 删除用户
+     * @param userId 用户ID
+     */
+    void deleteUser(Long userId);
+    
+    /**
+     * 禁用用户（设置为封禁状态）
+     * @param userId 用户ID
+     */
+    void disableUser(Long userId);
+    
+    /**
+     * 启用用户（设置为正常状态）
+     * @param userId 用户ID
+     */
+    void enableUser(Long userId);
 } 

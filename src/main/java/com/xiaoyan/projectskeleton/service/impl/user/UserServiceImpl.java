@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyan.projectskeleton.common.config.JwtConfig;
 import com.xiaoyan.projectskeleton.common.context.UserContext;
+import com.xiaoyan.projectskeleton.common.enums.UserStatusEnum;
 import com.xiaoyan.projectskeleton.common.exception.BusinessException;
 import com.xiaoyan.projectskeleton.common.exception.ExceptionUtils;
 import com.xiaoyan.projectskeleton.common.exception.UserErrorCode;
@@ -26,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 用户服务实现类
@@ -251,6 +255,160 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     public User getById(Long id) {
-        return super.getById(id);
+        return userMapper.selectById(id);
+    }
+    
+    /**
+     * 封禁用户
+     * @param userId 用户ID
+     * @param reason 封禁原因（可选）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void banUser(Long userId, String reason) {
+        // 1. 获取当前操作人信息
+        UserContext userContext = UserContext.getCurrentUser();
+        if (userContext == null) {
+            throw new BusinessException(UserErrorCode.USER_NOT_EXISTS, "用户未登录");
+        }
+        
+        // 2. 获取用户信息
+        User user = getById(userId);
+        ExceptionUtils.assertNotNull(user, UserErrorCode.USER_NOT_EXISTS);
+        
+        // 3. 防止管理员被封禁
+        Role role = roleMapper.selectById(user.getRoleId());
+        if (role != null && "ADMIN".equals(role.getCode())) {
+            throw new BusinessException(UserErrorCode.OPERATION_NOT_ALLOWED, "不能封禁管理员账号");
+        }
+        
+        // 4. 防止自己封禁自己
+        if (userId.equals(userContext.getUserId())) {
+            throw new BusinessException(UserErrorCode.OPERATION_NOT_ALLOWED, "不能封禁自己的账号");
+        }
+        
+        // 5. 如果已经是封禁状态，则不重复封禁
+        if (user.getStatus() == UserStatusEnum.BANNED.getId()) {
+            throw new BusinessException(UserErrorCode.ACCOUNT_ALREADY_BANNED, "该用户已经处于封禁状态");
+        }
+        
+        // 6. 修改用户状态为封禁
+        user.setStatus(UserStatusEnum.BANNED.getId());
+        userMapper.updateById(user);
+        
+        // 7. 记录封禁日志（如果需要的话，可以在此处添加记录封禁日志的代码）
+        log.info("用户 {} 被 {} 封禁，原因：{}", user.getUsername(), userContext.getUsername(), reason);
+    }
+    
+    /**
+     * 解封用户
+     * @param userId 用户ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void unbanUser(Long userId) {
+        // 1. 获取用户信息
+        User user = getById(userId);
+        ExceptionUtils.assertNotNull(user, UserErrorCode.USER_NOT_EXISTS);
+        
+        // 2. 如果不是封禁状态，则不需要解封
+        if (user.getStatus() != UserStatusEnum.BANNED.getId()) {
+            throw new BusinessException(UserErrorCode.OPERATION_NOT_ALLOWED, "该用户不处于封禁状态");
+        }
+        
+        // 3. 修改用户状态为正常
+        user.setStatus(UserStatusEnum.NORMAL.getId());
+        userMapper.updateById(user);
+        
+        // 4. 记录解封日志（如果需要的话，可以在此处添加记录解封日志的代码）
+        UserContext userContext = UserContext.getCurrentUser();
+        if (userContext != null) {
+            log.info("用户 {} 被 {} 解封", user.getUsername(), userContext.getUsername());
+        }
+    }
+    
+    /**
+     * 获取所有用户列表
+     * @return 用户列表
+     */
+    @Override
+    public List<UserProfileDTO> listAllUsers() {
+        // 1. 查询所有未删除的用户
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getDeleted, 0);
+        List<User> userList = userMapper.selectList(queryWrapper);
+        
+        // 2. 转换为用户资料DTO
+        if (userList == null || userList.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        return userList.stream().map(user -> getUserProfileById(user.getId()))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 删除用户
+     * @param userId 用户ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteUser(Long userId) {
+        // 1. 获取当前操作人信息
+        UserContext userContext = UserContext.getCurrentUser();
+        if (userContext == null) {
+            throw new BusinessException(UserErrorCode.USER_NOT_EXISTS, "用户未登录");
+        }
+        
+        // 2. 获取用户信息
+        User user = getById(userId);
+        ExceptionUtils.assertNotNull(user, UserErrorCode.USER_NOT_EXISTS);
+        
+        // 3. 防止管理员被删除
+        Role role = roleMapper.selectById(user.getRoleId());
+        if (role != null && "ADMIN".equals(role.getCode())) {
+            throw new BusinessException(UserErrorCode.OPERATION_NOT_ALLOWED, "不能删除管理员账号");
+        }
+        
+        // 4. 防止自己删除自己
+        if (userId.equals(userContext.getUserId())) {
+            throw new BusinessException(UserErrorCode.OPERATION_NOT_ALLOWED, "不能删除自己的账号");
+        }
+        
+        // 5. 逻辑删除用户（MyBatis-Plus的逻辑删除）
+        userMapper.deleteById(userId);
+        
+        // 6. 记录删除日志
+        log.info("用户 {} 被 {} 删除", user.getUsername(), userContext.getUsername());
+    }
+    
+    /**
+     * 禁用用户（设置为封禁状态）
+     * @param userId 用户ID
+     */
+    @Override
+    public void disableUser(Long userId) {
+        banUser(userId, "管理员禁用操作");
+    }
+    
+    /**
+     * 启用用户（设置为正常状态）
+     * @param userId 用户ID
+     */
+    @Override
+    public void enableUser(Long userId) {
+        // 1. 获取用户信息
+        User user = getById(userId);
+        ExceptionUtils.assertNotNull(user, UserErrorCode.USER_NOT_EXISTS);
+        
+        // 2. 设置为正常状态
+        user.setStatus(UserStatusEnum.NORMAL.getId());
+        userMapper.updateById(user);
+        
+        // 3. 记录日志
+        UserContext userContext = UserContext.getCurrentUser();
+        if (userContext != null) {
+            log.info("用户 {} 被 {} 启用", user.getUsername(), userContext.getUsername());
+        }
     }
 } 

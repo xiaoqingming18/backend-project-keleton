@@ -3,6 +3,7 @@ package com.xiaoyan.projectskeleton.common.interceptor;
 import com.xiaoyan.projectskeleton.common.annotation.RequireLogin;
 import com.xiaoyan.projectskeleton.common.annotation.RequireRoles;
 import com.xiaoyan.projectskeleton.common.context.UserContext;
+import com.xiaoyan.projectskeleton.common.enums.RoleEnum;
 import com.xiaoyan.projectskeleton.common.exception.BusinessException;
 import com.xiaoyan.projectskeleton.common.exception.CommonErrorCode;
 import com.xiaoyan.projectskeleton.common.util.JwtUtils;
@@ -99,11 +100,11 @@ public class AuthInterceptor implements HandlerInterceptor {
                 if (requireRoles.logical() == RequireRoles.Logical.OR) {
                     // 满足任一角色即可
                     hasRole = Arrays.stream(requireRoles.value())
-                            .anyMatch(role -> role.equals(roleCode));
+                            .anyMatch(role -> role.getCode().equals(roleCode));
                 } else {
                     // 必须满足所有角色（实际上多角色AND逻辑很少用到）
                     hasRole = Arrays.stream(requireRoles.value())
-                            .allMatch(role -> role.equals(roleCode));
+                            .allMatch(role -> role.getCode().equals(roleCode));
                 }
                 
                 if (!hasRole) {

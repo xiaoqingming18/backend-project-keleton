@@ -215,22 +215,47 @@ String newAccessToken = jwtUtils.refreshAccessToken(refreshToken, user, roleCode
    位置：`src/main/java/com/xiaoyan/projectskeleton/common/annotation/RequireRoles.java`
 
    用于标记需要特定角色才能访问的接口。在控制器方法上添加此注解并指定允许的角色后，只有拥有指定角色的用户才能访问该接口。
+   
+   注解使用枚举类型的参数，避免了角色编码拼写错误的问题。
 
    ```java
    @Target({ElementType.METHOD, ElementType.TYPE})
    @Retention(RetentionPolicy.RUNTIME)
+   @Documented
    public @interface RequireRoles {
-       String[] value();
+       /**
+        * 允许访问的角色枚举列表
+        * 为空时表示不限制角色
+        */
+       RoleEnum[] value() default {};
+       
+       /**
+        * 逻辑类型
+        * 默认为OR，表示满足任一角色即可访问
+        * 设置为AND时，表示需要同时满足所有角色才能访问
+        */
+       Logical logical() default Logical.OR;
+       
+       // 逻辑类型枚举定义...
    }
    ```
 
    使用示例：
    ```java
    @PutMapping("/admin/user/{id}")
-   @RequireRoles({"ADMIN"})
+   @RequireRoles(RoleEnum.ADMIN)
    public ApiResponse<Void> updateUser(@PathVariable Long id, @RequestBody UserUpdateDTO userUpdateDTO) {
        // 只有ADMIN角色的用户才能访问此接口
        userService.updateUser(id, userUpdateDTO);
+       return ApiResponse.success();
+   }
+   
+   // 使用多个角色和逻辑类型的示例
+   @DeleteMapping("/admin/user/{id}")
+   @RequireRoles(value = {RoleEnum.ADMIN}, logical = RequireRoles.Logical.AND)
+   public ApiResponse<Void> deleteUser(@PathVariable Long id) {
+       // 必须同时拥有所有指定角色的用户才能访问
+       userService.deleteUser(id);
        return ApiResponse.success();
    }
    ```
@@ -359,14 +384,19 @@ public class AuthInterceptor implements HandlerInterceptor {
 
             // 判断是否需要特定角色
             if (methodRequireRoles != null || classRequireRoles != null) {
-                String[] requiredRoles = methodRequireRoles != null ? methodRequireRoles.value() : classRequireRoles.value();
+                RequireRoles requireRoles = methodRequireRoles != null ? methodRequireRoles : classRequireRoles;
                 boolean hasRole = false;
-                for (String requiredRole : requiredRoles) {
-                    if (requiredRole.equals(role)) {
-                        hasRole = true;
-                        break;
-                    }
+                
+                if (requireRoles.logical() == RequireRoles.Logical.OR) {
+                    // 满足任一角色即可
+                    hasRole = Arrays.stream(requireRoles.value())
+                            .anyMatch(roleEnum -> roleEnum.getCode().equals(role));
+                } else {
+                    // 必须满足所有角色
+                    hasRole = Arrays.stream(requireRoles.value())
+                            .allMatch(roleEnum -> roleEnum.getCode().equals(role));
                 }
+                
                 if (!hasRole) {
                     throw new BusinessException(CommonErrorCode.FORBIDDEN, "权限不足");
                 }
@@ -586,12 +616,22 @@ try {
    - 用户资料管理
    - 角色权限管理
    - 用户注册功能（支持角色选择）
+   - 用户状态管理（封禁/解封/删除用户）
 
    接口列表：
    - `/user/register` - 用户注册
    - `/user/check-username` - 检查用户名是否已存在
    - `/user/check-email` - 检查邮箱是否已被注册
    - `/user/role/list` - 获取所有角色列表
+   - `/user/profile` - 获取当前登录用户的资料
+   
+   管理员接口（需要ADMIN角色）：
+   - `/user/admin/list` - 获取所有用户列表
+   - `/user/admin/{userId}/disable` - 禁用用户
+   - `/user/admin/{userId}/enable` - 启用用户
+   - `/user/admin/{userId}/ban` - 封禁用户
+   - `/user/admin/{userId}/unban` - 解封用户
+   - `/user/admin/{userId}` - 删除用户
 
 5. **认证服务模块**
    - JWT 双 Token 认证方案
@@ -614,6 +654,76 @@ try {
 - Maven
 
 ## 特别说明
+
+### 角色枚举类
+
+位置：`src/main/java/com/xiaoyan/projectskeleton/common/enums/RoleEnum.java`
+
+项目使用枚举类型表示用户角色，避免使用字符串硬编码引起的潜在错误。角色枚举类包含了所有系统角色的定义，并提供了通过角色编码获取枚举值的工具方法。
+
+```java
+@Getter
+public enum RoleEnum {
+    
+    /**
+     * 管理员
+     */
+    ADMIN("ADMIN", "管理员"),
+    
+    /**
+     * 普通用户
+     */
+    USER("USER", "普通用户");
+    
+    /**
+     * 角色编码
+     */
+    private final String code;
+    
+    /**
+     * 角色名称
+     */
+    private final String name;
+    
+    /**
+     * 根据编码获取枚举值
+     */
+    public static RoleEnum getByCode(String code) {
+        for (RoleEnum roleEnum : values()) {
+            if (roleEnum.getCode().equals(code)) {
+                return roleEnum;
+            }
+        }
+        return null;
+    }
+}
+```
+
+#### 使用场景
+
+1. **在@RequireRoles注解中使用**：
+   ```java
+   @RequireRoles(RoleEnum.ADMIN)
+   ```
+
+2. **在业务逻辑中判断角色**：
+   ```java
+   if (RoleEnum.ADMIN.getCode().equals(userContext.getRoleCode())) {
+       // 管理员特有的逻辑
+   }
+   ```
+
+3. **根据角色编码获取枚举值**：
+   ```java
+   String roleCode = userContext.getRoleCode();
+   RoleEnum roleEnum = RoleEnum.getByCode(roleCode);
+   ```
+
+4. **获取角色相关信息**：
+   ```java
+   String roleName = RoleEnum.ADMIN.getName(); // "管理员"
+   String roleCode = RoleEnum.USER.getCode();  // "USER"
+   ```
 
 ### 业务异常处理工具
 
