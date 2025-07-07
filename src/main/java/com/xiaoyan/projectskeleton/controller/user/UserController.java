@@ -6,6 +6,8 @@ import com.xiaoyan.projectskeleton.repository.dto.user.JwtTokenDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserLoginDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetRequestDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetVerifyDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 import com.xiaoyan.projectskeleton.service.user.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -93,5 +95,29 @@ public class UserController {
     public ApiResponse<Boolean> checkEmail(@RequestParam String email) {
         boolean exists = userService.checkEmailExists(email);
         return ApiResponse.success(exists);
+    }
+    
+    /**
+     * 发送密码重置验证码
+     * @param requestDTO 密码重置请求
+     * @return 发送结果
+     */
+    @PostMapping("/password/reset-code")
+    public ApiResponse<Void> sendPasswordResetCode(@RequestBody @Validated PasswordResetRequestDTO requestDTO) {
+        log.info("发送密码重置验证码: {}", requestDTO.getEmail());
+        userService.sendPasswordResetCode(requestDTO);
+        return ApiResponse.success(null, "验证码已发送到您的邮箱，请注意查收");
+    }
+    
+    /**
+     * 验证验证码并重置密码
+     * @param verifyDTO 验证信息
+     * @return 重置结果
+     */
+    @PostMapping("/password/reset")
+    public ApiResponse<Void> resetPassword(@RequestBody @Validated PasswordResetVerifyDTO verifyDTO) {
+        log.info("验证验证码并重置密码: {}", verifyDTO.getEmail());
+        userService.verifyCodeAndResetPassword(verifyDTO);
+        return ApiResponse.success(null, "密码重置成功");
     }
 } 

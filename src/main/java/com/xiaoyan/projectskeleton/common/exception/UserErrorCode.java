@@ -67,7 +67,27 @@ public enum UserErrorCode implements ErrorCode {
     /**
      * 无权限操作
      */
-    NO_PERMISSION(10012, "无权限进行此操作");
+    NO_PERMISSION(10012, "无权限进行此操作"),
+    
+    /**
+     * 验证码不存在或已过期
+     */
+    VERIFICATION_CODE_EXPIRED(10013, "验证码不存在或已过期"),
+    
+    /**
+     * 验证码错误
+     */
+    VERIFICATION_CODE_ERROR(10014, "验证码错误"),
+    
+    /**
+     * 邮箱不存在
+     */
+    EMAIL_NOT_EXISTS(10015, "邮箱不存在"),
+    
+    /**
+     * 验证码发送过于频繁
+     */
+    VERIFICATION_CODE_SEND_TOO_FREQUENTLY(10016, "验证码发送过于频繁，请稍后再试");
 
     /**
      * 错误码

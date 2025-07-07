@@ -152,4 +152,32 @@ public class EmailTemplateUtil {
         
         return getSimpleTemplate("账号封禁通知", content.toString(), footer);
     }
+    
+    /**
+     * 生成修改密码验证码邮件模板
+     * 
+     * @param username   用户名
+     * @param code       验证码
+     * @param validTime  有效时间描述，如"5分钟"
+     * @param footer     页脚
+     * @return HTML字符串
+     */
+    public static String getPasswordResetCodeTemplate(String username, String code, String validTime, String footer) {
+        StringBuilder content = new StringBuilder();
+        content.append("<p>尊敬的 <strong>").append(username).append("</strong>：</p>")
+               .append("<p>您正在进行密码修改操作，请使用以下验证码完成验证：</p>")
+               .append("<p style=\"font-size: 24px; font-weight: bold; color: #333; text-align: center; padding: 15px; background-color: #f7f7f7; border-radius: 5px; letter-spacing: 5px;\">")
+               .append(code)
+               .append("</p>")
+               .append("<p>验证码有效期为<strong>").append(validTime).append("</strong>，请勿将验证码泄露给他人。</p>")
+               .append("<p>如非本人操作，请立即修改密码或联系客服。</p>")
+               .append("<div style=\"margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #ffc107; border-radius: 3px;\">")
+               .append("<p><strong>安全提示：</strong></p>")
+               .append("<p>1. 请勿将验证码告知他人，包括自称客服人员。</p>")
+               .append("<p>2. 系统不会要求您提供任何个人敏感信息。</p>")
+               .append("<p>3. 建议定期修改密码并使用复杂密码。</p>")
+               .append("</div>");
+        
+        return getSimpleTemplate("密码修改验证", content.toString(), footer);
+    }
 } 

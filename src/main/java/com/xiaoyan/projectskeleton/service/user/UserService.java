@@ -4,6 +4,8 @@ import com.xiaoyan.projectskeleton.repository.dto.user.JwtTokenDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserLoginDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetRequestDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetVerifyDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 
 import java.util.List;
@@ -97,4 +99,16 @@ public interface UserService {
      * @param userId 用户ID
      */
     void enableUser(Long userId);
+    
+    /**
+     * 发送密码重置验证码
+     * @param requestDTO 密码重置请求
+     */
+    void sendPasswordResetCode(PasswordResetRequestDTO requestDTO);
+    
+    /**
+     * 验证验证码并重置密码
+     * @param verifyDTO 验证信息
+     */
+    void verifyCodeAndResetPassword(PasswordResetVerifyDTO verifyDTO);
 } 

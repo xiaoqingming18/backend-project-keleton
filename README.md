@@ -65,6 +65,34 @@ jwt.secret=projectSkeletonSecretKey123456789012345678901234567890
 jwt.access-token-expiration=3600
 jwt.refresh-token-expiration=604800
 jwt.issuer=project-skeleton
+
+# Redis配置
+# Redis服务器地址
+spring.data.redis.host=localhost
+# Redis服务器端口
+spring.data.redis.port=6379
+# Redis数据库索引（默认为0）
+spring.data.redis.database=0
+# Redis服务器连接密码（默认为空）
+spring.data.redis.password=
+# 连接池最大连接数（使用负值表示没有限制）
+spring.data.redis.lettuce.pool.max-active=16
+# 连接池最大阻塞等待时间（使用负值表示没有限制）
+spring.data.redis.lettuce.pool.max-wait=-1ms
+# 连接池中的最大空闲连接
+spring.data.redis.lettuce.pool.max-idle=8
+# 连接池中的最小空闲连接
+spring.data.redis.lettuce.pool.min-idle=0
+# 连接超时时间（毫秒）
+spring.data.redis.timeout=3000ms
+
+# 验证码配置
+# 验证码有效期（秒）
+verification.code.expire-time=300
+# 验证码发送频率限制（秒）
+verification.code.limit-time=60
+# 验证码长度
+verification.code.length=6
 ```
 
 ### Web MVC 配置
@@ -469,7 +497,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                     // 必须满足所有角色
                     hasRole = Arrays.stream(requireRoles.value())
                             .allMatch(roleEnum -> roleEnum.getCode().equals(role));
-                }
+                    }
                 
                 if (!hasRole) {
                     throw new BusinessException(CommonErrorCode.FORBIDDEN, "权限不足");
@@ -691,6 +719,7 @@ try {
    - 角色权限管理
    - 用户注册功能（支持角色选择）
    - 用户状态管理（封禁/解封/删除用户）
+   - 密码重置功能（基于邮箱验证码）
 
    接口列表：
    - `/user/register` - 用户注册
@@ -698,6 +727,8 @@ try {
    - `/user/check-email` - 检查邮箱是否已被注册
    - `/user/role/list` - 获取所有角色列表
    - `/user/profile` - 获取当前登录用户的资料
+   - `/user/password/reset-code` - 发送密码重置验证码
+   - `/user/password/reset` - 验证验证码并重置密码
    
    管理员接口（需要ADMIN角色）：
    - `/user/admin/list` - 获取所有用户列表
@@ -964,3 +995,285 @@ spring.web.resources.add-mappings=false
        return interceptor;
    }
    ``` 
+
+### Redis 缓存服务
+
+项目集成了 Redis 缓存服务，用于提高系统性能和减轻数据库压力。Redis 作为高性能的键值对数据库，适合存储会话信息、临时数据、热点数据缓存等。
+
+#### Redis 配置
+
+位置：`src/main/resources/application.properties`
+
+```properties
+# Redis配置
+# Redis服务器地址
+spring.data.redis.host=localhost
+# Redis服务器端口
+spring.data.redis.port=6379
+# Redis数据库索引（默认为0）
+spring.data.redis.database=0
+# Redis服务器连接密码（默认为空）
+spring.data.redis.password=
+# 连接池最大连接数（使用负值表示没有限制）
+spring.data.redis.lettuce.pool.max-active=16
+# 连接池最大阻塞等待时间（使用负值表示没有限制）
+spring.data.redis.lettuce.pool.max-wait=-1ms
+# 连接池中的最大空闲连接
+spring.data.redis.lettuce.pool.max-idle=8
+# 连接池中的最小空闲连接
+spring.data.redis.lettuce.pool.min-idle=0
+# 连接超时时间（毫秒）
+spring.data.redis.timeout=3000ms
+
+# 验证码配置
+# 验证码有效期（秒）
+verification.code.expire-time=300
+# 验证码发送频率限制（秒）
+verification.code.limit-time=60
+# 验证码长度
+verification.code.length=6
+```
+
+#### Redis 序列化配置
+
+位置：`src/main/java/com/xiaoyan/projectskeleton/common/config/RedisConfig.java`
+
+Redis 配置类，主要配置 RedisTemplate 的序列化方式，使用 Jackson2JsonRedisSerializer 进行对象序列化，避免默认的 JDK 序列化导致的可读性差的问题。
+
+```java
+@Configuration
+public class RedisConfig {
+    
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory);
+
+        // 设置objectMapper:转换java对象的时候使用
+        ObjectMapper objectMapper = new ObjectMapper();
+        // 设置所有访问权限以及所有的实际类型都可序列化和反序列化
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        // 指定序列化输入的类型，类必须是非final修饰的
+        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, 
+                ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.WRAPPER_ARRAY);
+        
+        // 创建JSON序列化器
+        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = 
+                new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
+        
+        // 创建String序列化器
+        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+
+        // 设置key/value的序列化方式
+        template.setKeySerializer(stringRedisSerializer);
+        template.setValueSerializer(jackson2JsonRedisSerializer);
+        
+        // 设置hash key/value的序列化方式
+        template.setHashKeySerializer(stringRedisSerializer);
+        template.setHashValueSerializer(jackson2JsonRedisSerializer);
+        
+        // 初始化RedisTemplate
+        template.afterPropertiesSet();
+        
+        return template;
+    }
+}
+```
+
+#### RedisUtils 工具类
+
+位置：`src/main/java/com/xiaoyan/projectskeleton/common/util/RedisUtils.java`
+
+Redis 工具类，封装了常用的 Redis 操作，包括对 String、Hash、Set、List 等数据类型的操作，以及过期时间设置等功能。
+
+##### 主要功能
+
+1. **基本操作**
+   - 设置过期时间
+   - 获取过期时间
+   - 判断 key 是否存在
+   - 删除缓存
+
+2. **String 类型操作**
+   - 获取缓存
+   - 设置缓存
+   - 设置缓存并设置过期时间
+   - 递增/递减操作
+
+3. **Hash 类型操作**
+   - 获取 Hash 中的单个值
+   - 获取 Hash 中的所有键值对
+   - 设置 Hash 中的值
+   - 删除 Hash 中的值
+   - Hash 递增/递减操作
+
+4. **Set 类型操作**
+   - 获取 Set 中的所有值
+   - 判断 Set 中是否存在某个值
+   - 向 Set 中添加值
+   - 获取 Set 的大小
+   - 移除 Set 中的值
+
+5. **List 类型操作**
+   - 获取 List 中的内容
+   - 获取 List 的大小
+   - 通过索引获取 List 中的值
+   - 向 List 中添加值
+   - 修改 List 中的值
+   - 移除 List 中的值
+
+##### 使用示例
+
+1. **基本操作**：
+
+```java
+// 设置缓存
+redisUtils.set("key", "value");
+
+// 设置缓存并设置过期时间（10秒）
+redisUtils.set("key", "value", 10);
+
+// 获取缓存
+Object value = redisUtils.get("key");
+
+// 删除缓存
+redisUtils.delete("key");
+
+// 判断key是否存在
+boolean exists = redisUtils.hasKey("key");
+
+// 设置过期时间
+redisUtils.expire("key", 10);
+
+// 获取过期时间
+long expireTime = redisUtils.getExpire("key");
+```
+
+2. **Hash 操作**：
+
+```java
+// 设置Hash值
+redisUtils.hset("hashKey", "item", "value");
+
+// 获取Hash值
+Object value = redisUtils.hget("hashKey", "item");
+
+// 设置多个Hash值
+Map<String, Object> map = new HashMap<>();
+map.put("item1", "value1");
+map.put("item2", "value2");
+redisUtils.hmset("hashKey", map);
+
+// 获取所有Hash值
+Map<Object, Object> map = redisUtils.hmget("hashKey");
+
+// 删除Hash值
+redisUtils.hdel("hashKey", "item");
+
+// 判断Hash中是否存在某个值
+boolean exists = redisUtils.hHasKey("hashKey", "item");
+
+// Hash递增
+double newValue = redisUtils.hincr("hashKey", "item", 1);
+
+// Hash递减
+double newValue = redisUtils.hdecr("hashKey", "item", 1);
+```
+
+3. **Set 操作**：
+
+```java
+// 获取Set中的所有值
+Set<Object> set = redisUtils.sGet("setKey");
+
+// 向Set中添加值
+redisUtils.sSet("setKey", "value1", "value2");
+
+// 向Set中添加值并设置过期时间
+redisUtils.sSetAndTime("setKey", 10, "value1", "value2");
+
+// 获取Set的大小
+long size = redisUtils.sGetSetSize("setKey");
+
+// 判断Set中是否存在某个值
+boolean exists = redisUtils.sHasKey("setKey", "value");
+
+// 移除Set中的值
+redisUtils.setRemove("setKey", "value");
+```
+
+4. **List 操作**：
+
+```java
+// 获取List中的所有值
+List<Object> list = redisUtils.lGet("listKey", 0, -1);
+
+// 获取List的大小
+long size = redisUtils.lGetListSize("listKey");
+
+// 通过索引获取List中的值
+Object value = redisUtils.lGetIndex("listKey", 0);
+
+// 向List中添加值
+redisUtils.lSet("listKey", "value");
+
+// 向List中添加值并设置过期时间
+redisUtils.lSet("listKey", "value", 10);
+
+// 向List中添加多个值
+List<Object> valueList = Arrays.asList("value1", "value2");
+redisUtils.lSet("listKey", valueList);
+
+// 修改List中的值
+redisUtils.lUpdateIndex("listKey", 0, "newValue");
+
+// 移除List中的值
+redisUtils.lRemove("listKey", 1, "value");
+```
+
+#### 应用场景
+
+1. **缓存热点数据**：将频繁访问的数据缓存到 Redis 中，减轻数据库压力
+2. **会话管理**：存储用户会话信息，支持分布式会话
+3. **计数器**：利用 Redis 的原子性操作实现高性能计数器
+4. **限流**：实现接口访问限流功能
+5. **分布式锁**：基于 Redis 实现分布式锁机制
+6. **排行榜**：利用 Redis 的 Sorted Set 实现高效的排行榜功能
+7. **消息队列**：使用 Redis 的 List 实现简单的消息队列功能
+8. **验证码存储**：存储邮箱验证码等临时数据，设置过期时间自动失效
+
+#### 项目中的应用示例
+
+1. **密码重置验证码**：
+   - 生成随机验证码并存储到Redis中，设置5分钟过期时间
+   - 使用Redis实现验证码发送频率限制，防止频繁请求
+   - 验证成功后立即删除验证码，防止重复使用
+
+```java
+// 将验证码存入Redis，设置过期时间
+String codeKey = "password:reset:code:" + email;
+redisUtils.set(codeKey, code, verificationCodeExpireTime);
+
+// 设置发送限制，限制时间内不能重复发送
+String limitKey = "password:reset:limit:" + email;
+redisUtils.set(limitKey, true, verificationCodeLimitTime);
+
+// 验证验证码
+Object savedCode = redisUtils.get(codeKey);
+if (savedCode == null) {
+    throw new BusinessException(UserErrorCode.VERIFICATION_CODE_EXPIRED);
+}
+
+// 验证成功后删除验证码
+redisUtils.delete(codeKey);
+```
+
+#### 注意事项
+
+1. **数据一致性**：Redis 作为缓存，需要考虑与数据库的数据一致性问题
+2. **缓存穿透**：对不存在的数据进行缓存，避免大量请求直接访问数据库
+3. **缓存雪崩**：为缓存设置随机过期时间，避免同一时间大量缓存失效
+4. **缓存击穿**：对热点数据设置永不过期或使用互斥锁机制
+5. **内存管理**：合理设置 Redis 的内存上限和淘汰策略
+
+Redis 缓存服务的集成，为项目提供了高性能的数据缓存能力，可以显著提升系统性能和用户体验。 

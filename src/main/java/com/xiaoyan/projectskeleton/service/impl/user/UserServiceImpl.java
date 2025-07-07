@@ -6,6 +6,7 @@ import com.xiaoyan.projectskeleton.common.config.JwtConfig;
 import com.xiaoyan.projectskeleton.common.context.UserContext;
 import com.xiaoyan.projectskeleton.common.enums.UserStatusEnum;
 import com.xiaoyan.projectskeleton.common.exception.BusinessException;
+import com.xiaoyan.projectskeleton.common.exception.EmailErrorCode;
 import com.xiaoyan.projectskeleton.common.exception.ExceptionUtils;
 import com.xiaoyan.projectskeleton.common.exception.UserErrorCode;
 import com.xiaoyan.projectskeleton.common.util.JwtUtils;
@@ -16,22 +17,28 @@ import com.xiaoyan.projectskeleton.repository.dto.user.JwtTokenDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserLoginDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetRequestDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetVerifyDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.Role;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 import com.xiaoyan.projectskeleton.repository.entity.user.UserProfile;
 import com.xiaoyan.projectskeleton.service.user.UserService;
 import com.xiaoyan.projectskeleton.service.EmailService;
 import com.xiaoyan.projectskeleton.common.util.EmailTemplateUtil;
+import com.xiaoyan.projectskeleton.common.util.RedisUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 用户服务实现类
@@ -58,10 +65,41 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     private EmailService emailService;
     
+    @Autowired
+    private RedisUtils redisUtils;
+    
     /**
      * 默认角色编码
      */
     private static final String DEFAULT_ROLE_CODE = "USER";
+    
+    /**
+     * 验证码有效期（秒）
+     */
+    @Value("${verification.code.expire-time:300}")
+    private long verificationCodeExpireTime;
+    
+    /**
+     * 验证码限流时间（秒）
+     */
+    @Value("${verification.code.limit-time:60}")
+    private long verificationCodeLimitTime;
+    
+    /**
+     * 验证码长度
+     */
+    @Value("${verification.code.length:6}")
+    private int verificationCodeLength;
+    
+    /**
+     * 验证码Redis前缀
+     */
+    private static final String PASSWORD_RESET_CODE_PREFIX = "password:reset:code:";
+    
+    /**
+     * 验证码限流Redis前缀
+     */
+    private static final String PASSWORD_RESET_LIMIT_PREFIX = "password:reset:limit:";
     
     /**
      * 用户注册
@@ -439,5 +477,121 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userContext != null) {
             log.info("用户 {} 被 {} 启用", user.getUsername(), userContext.getUsername());
         }
+    }
+    
+    /**
+     * 发送密码重置验证码
+     * @param requestDTO 密码重置请求
+     */
+    @Override
+    public void sendPasswordResetCode(PasswordResetRequestDTO requestDTO) {
+        String email = requestDTO.getEmail();
+        
+        // 1. 检查邮箱是否存在
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getEmail, email);
+        User user = userMapper.selectOne(queryWrapper);
+        ExceptionUtils.assertNotNull(user, UserErrorCode.EMAIL_NOT_EXISTS);
+        
+        // 2. 检查是否频繁发送验证码
+        String limitKey = PASSWORD_RESET_LIMIT_PREFIX + email;
+        if (Boolean.TRUE.equals(redisUtils.hasKey(limitKey))) {
+            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_SEND_TOO_FREQUENTLY);
+        }
+        
+        // 3. 生成随机验证码
+        String code = generateVerificationCode(verificationCodeLength);
+        
+        // 4. 将验证码存入Redis，设置过期时间
+        String codeKey = PASSWORD_RESET_CODE_PREFIX + email;
+        redisUtils.set(codeKey, code, verificationCodeExpireTime);
+        
+        // 5. 设置发送限制
+        redisUtils.set(limitKey, true, verificationCodeLimitTime);
+        
+        // 6. 发送验证码邮件
+        try {
+            String emailContent = EmailTemplateUtil.getPasswordResetCodeTemplate(
+                user.getUsername(),
+                code,
+                verificationCodeExpireTime / 60 + "分钟",
+                "系统自动发送，请勿回复"
+            );
+            
+            emailService.sendHtmlEmail(
+                null, // 使用系统默认发件人
+                email,
+                "密码修改验证码",
+                emailContent
+            );
+            
+            log.info("已向用户 {} 发送密码重置验证码", email);
+        } catch (Exception e) {
+            // 邮件发送失败，删除Redis中的验证码和限制
+            redisUtils.delete(codeKey);
+            redisUtils.delete(limitKey);
+            
+            log.error("向用户 {} 发送密码重置验证码失败：{}", email, e.getMessage());
+            throw new BusinessException(EmailErrorCode.EMAIL_SEND_FAILED, "验证码发送失败：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 验证验证码并重置密码
+     * @param verifyDTO 验证信息
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void verifyCodeAndResetPassword(PasswordResetVerifyDTO verifyDTO) {
+        String email = verifyDTO.getEmail();
+        String code = verifyDTO.getCode();
+        String newPassword = verifyDTO.getNewPassword();
+        String confirmPassword = verifyDTO.getConfirmPassword();
+        
+        // 1. 检查邮箱是否存在
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getEmail, email);
+        User user = userMapper.selectOne(queryWrapper);
+        ExceptionUtils.assertNotNull(user, UserErrorCode.EMAIL_NOT_EXISTS);
+        
+        // 2. 检查新密码和确认密码是否一致
+        ExceptionUtils.assertTrue(newPassword.equals(confirmPassword), 
+                UserErrorCode.PASSWORD_NOT_MATCH);
+        
+        // 3. 检查验证码是否存在
+        String codeKey = PASSWORD_RESET_CODE_PREFIX + email;
+        Object savedCode = redisUtils.get(codeKey);
+        if (savedCode == null) {
+            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_EXPIRED);
+        }
+        
+        // 4. 检查验证码是否正确
+        if (!code.equals(savedCode.toString())) {
+            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_ERROR);
+        }
+        
+        // 5. 更新密码
+        // 实际项目中应该对密码进行加密处理
+        user.setPassword(newPassword);
+        userMapper.updateById(user);
+        
+        // 6. 删除Redis中的验证码
+        redisUtils.delete(codeKey);
+        
+        log.info("用户 {} 成功重置密码", user.getUsername());
+    }
+    
+    /**
+     * 生成指定长度的随机验证码
+     * @param length 验证码长度
+     * @return 验证码
+     */
+    private String generateVerificationCode(int length) {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            sb.append(random.nextInt(10));
+        }
+        return sb.toString();
     }
 } 
