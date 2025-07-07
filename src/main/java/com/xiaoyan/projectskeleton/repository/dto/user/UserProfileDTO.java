@@ -2,6 +2,8 @@ package com.xiaoyan.projectskeleton.repository.dto.user;
 
 import lombok.Data;
 
+import java.time.LocalDate;
+
 /**
  * 用户资料DTO
  */
@@ -57,4 +59,34 @@ public class UserProfileDTO {
      * 最后登录时间
      */
     private String lastLoginTime;
+    
+    /**
+     * 真实姓名
+     */
+    private String realName;
+    
+    /**
+     * 性别：0-未知，1-男，2-女
+     */
+    private Integer gender;
+    
+    /**
+     * 生日
+     */
+    private LocalDate birthday;
+    
+    /**
+     * 个性签名
+     */
+    private String signature;
+    
+    /**
+     * 地址
+     */
+    private String address;
+    
+    /**
+     * 个人简介
+     */
+    private String bio;
 } 

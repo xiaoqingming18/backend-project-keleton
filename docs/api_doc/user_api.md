@@ -315,7 +315,13 @@
     "roleName": "普通用户",
     "roleCode": "USER",
     "status": 1,
-    "lastLoginTime": "2023-07-06 16:30:00"
+    "lastLoginTime": "2023-07-06 16:30:00",
+    "realName": "张三",
+    "gender": 1,
+    "birthday": "1990-01-01",
+    "signature": "这是我的个性签名",
+    "address": "北京市朝阳区",
+    "bio": "这是我的个人简介，介绍自己的基本情况和兴趣爱好等。"
   }
 }
 ```
@@ -336,6 +342,12 @@
 | data.roleCode | String | 角色编码 |
 | data.status | Integer | 账号状态：0-未激活，1-正常，2-封禁 |
 | data.lastLoginTime | String | 最后登录时间 |
+| data.realName | String | 真实姓名 |
+| data.gender | Integer | 性别：0-未知，1-男，2-女 |
+| data.birthday | String | 生日 |
+| data.signature | String | 个性签名 |
+| data.address | String | 地址 |
+| data.bio | String | 个人简介 |
 
 ### 错误码
 
@@ -385,7 +397,13 @@
     "roleName": "普通用户",
     "roleCode": "USER",
     "status": 1,
-    "lastLoginTime": "2023-07-06 16:30:00"
+    "lastLoginTime": "2023-07-06 16:30:00",
+    "realName": "张三",
+    "gender": 1,
+    "birthday": "1990-01-01",
+    "signature": "这是我的个性签名",
+    "address": "北京市朝阳区",
+    "bio": "这是我的个人简介，介绍自己的基本情况和兴趣爱好等。"
   }
 }
 ```
@@ -406,6 +424,12 @@
 | data.roleCode | String | 角色编码 |
 | data.status | Integer | 账号状态：0-未激活，1-正常，2-封禁 |
 | data.lastLoginTime | String | 最后登录时间 |
+| data.realName | String | 真实姓名 |
+| data.gender | Integer | 性别：0-未知，1-男，2-女 |
+| data.birthday | String | 生日 |
+| data.signature | String | 个性签名 |
+| data.address | String | 地址 |
+| data.bio | String | 个人简介 |
 
 ### 错误码
 

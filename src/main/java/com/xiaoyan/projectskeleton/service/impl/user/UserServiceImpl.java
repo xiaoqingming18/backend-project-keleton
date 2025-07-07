@@ -260,6 +260,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 设置用户资料信息
         if (userProfile != null) {
             profileDTO.setNickname(userProfile.getNickname());
+            profileDTO.setRealName(userProfile.getRealName());
+            profileDTO.setGender(userProfile.getGender());
+            profileDTO.setBirthday(userProfile.getBirthday());
+            profileDTO.setSignature(userProfile.getSignature());
+            profileDTO.setAddress(userProfile.getAddress());
+            profileDTO.setBio(userProfile.getBio());
         } else {
             profileDTO.setNickname(user.getUsername());
         }
