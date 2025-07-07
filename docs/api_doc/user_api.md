@@ -439,6 +439,100 @@
 | 401 | 未授权 |
 | 500 | 服务器内部错误 |
 
+## 8. 更新当前登录用户资料接口
+
+### 接口信息
+
+- **接口路径**：`/user/profile`
+- **请求方式**：PUT
+- **接口描述**：更新当前登录用户的资料信息，只更新提供的字段
+- **权限要求**：需要登录，不限制角色
+
+### 请求参数
+
+#### 请求体 (JSON)
+
+```json
+{
+  "nickname": "新昵称",
+  "mobile": "13900139000",
+  "realName": "张三",
+  "gender": 1,
+  "birthday": "1990-01-01",
+  "signature": "这是我的新个性签名",
+  "address": "北京市海淀区",
+  "bio": "这是我的新个人简介"
+}
+```
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| nickname | String | 否 | 昵称，最大长度50个字符 |
+| mobile | String | 否 | 手机号码，格式为1开头的11位数字 |
+| realName | String | 否 | 真实姓名，最大长度50个字符 |
+| gender | Integer | 否 | 性别：0-未知，1-男，2-女 |
+| birthday | String | 否 | 生日，格式为yyyy-MM-dd |
+| signature | String | 否 | 个性签名，最大长度255个字符 |
+| address | String | 否 | 地址，最大长度255个字符 |
+| bio | String | 否 | 个人简介，最大长度1000个字符 |
+
+### 请求头
+
+| 参数名 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| Authorization | String | 是 | 访问令牌，格式为"Bearer {accessToken}" |
+
+### 响应参数
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "更新用户资料成功",
+  "data": {
+    "userId": 1,
+    "username": "testuser",
+    "nickname": "新昵称",
+    "email": "test@example.com",
+    "mobile": "13900139000",
+    "avatar": "https://example.com/avatar.jpg",
+    "roleName": "普通用户",
+    "roleCode": "USER",
+    "status": 1,
+    "lastLoginTime": "2023-07-06 16:30:00",
+    "realName": "张三",
+    "gender": 1,
+    "birthday": "1990-01-01",
+    "signature": "这是我的新个性签名",
+    "address": "北京市海淀区",
+    "bio": "这是我的新个人简介"
+  }
+}
+```
+
+| 参数名 | 类型 | 说明 |
+| --- | --- | --- |
+| code | Integer | 状态码，200表示成功 |
+| success | Boolean | 是否成功 |
+| message | String | 提示信息 |
+| data | Object | 更新后的用户资料信息（与获取用户资料接口返回格式相同） |
+
+### 错误码
+
+| 错误码 | 说明 |
+| --- | --- |
+| 10017 | 用户未登录 |
+| 10005 | 用户不存在 |
+| 400 | 参数错误 |
+| 401 | 未授权 |
+| 500 | 服务器内部错误 |
+
+### 注意事项
+
+- 请求中只需要包含需要更新的字段，未提供的字段将保持原值不变
+- 用户名(username)、邮箱(email)、头像(avatar)和角色(role)等敏感字段无法通过此接口更新
+- 如需更新头像，请使用专门的头像上传接口
+
 ## 管理员操作接口
 
 以下接口需要管理员权限，只有角色为ADMIN的用户才能访问。

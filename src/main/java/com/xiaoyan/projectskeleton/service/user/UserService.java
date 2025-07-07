@@ -6,6 +6,7 @@ import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetRequestDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetVerifyDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileUpdateDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 
 import java.util.List;
@@ -111,4 +112,11 @@ public interface UserService {
      * @param verifyDTO 验证信息
      */
     void verifyCodeAndResetPassword(PasswordResetVerifyDTO verifyDTO);
+    
+    /**
+     * 更新当前登录用户的资料
+     * @param updateDTO 更新资料请求
+     * @return 更新后的用户资料
+     */
+    UserProfileDTO updateCurrentUserProfile(UserProfileUpdateDTO updateDTO);
 } 

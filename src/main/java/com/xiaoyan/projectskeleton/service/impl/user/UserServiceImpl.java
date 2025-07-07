@@ -19,6 +19,7 @@ import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetRequestDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetVerifyDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileUpdateDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.Role;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 import com.xiaoyan.projectskeleton.repository.entity.user.UserProfile;
@@ -600,5 +601,96 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             sb.append(random.nextInt(10));
         }
         return sb.toString();
+    }
+    
+    /**
+     * 更新当前登录用户的资料
+     * @param updateDTO 更新资料请求
+     * @return 更新后的用户资料
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public UserProfileDTO updateCurrentUserProfile(UserProfileUpdateDTO updateDTO) {
+        // 1. 获取当前登录用户信息
+        UserContext userContext = UserContext.getCurrentUser();
+        ExceptionUtils.assertNotNull(userContext, UserErrorCode.USER_NOT_LOGIN);
+        
+        Long userId = userContext.getUserId();
+        
+        // 2. 获取用户基本信息
+        User user = userMapper.selectById(userId);
+        ExceptionUtils.assertNotNull(user, UserErrorCode.USER_NOT_EXISTS);
+        
+        // 3. 更新用户基本信息（仅限允许的字段）
+        boolean userUpdated = false;
+        if (StringUtils.hasText(updateDTO.getMobile())) {
+            user.setMobile(updateDTO.getMobile());
+            userUpdated = true;
+        }
+        
+        if (userUpdated) {
+            userMapper.updateById(user);
+        }
+        
+        // 4. 获取或创建用户资料
+        LambdaQueryWrapper<UserProfile> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(UserProfile::getUserId, userId);
+        UserProfile userProfile = userProfileMapper.selectOne(queryWrapper);
+        
+        if (userProfile == null) {
+            userProfile = new UserProfile();
+            userProfile.setUserId(userId);
+        }
+        
+        // 5. 更新用户资料（仅限允许的字段）
+        boolean profileUpdated = false;
+        
+        if (StringUtils.hasText(updateDTO.getNickname())) {
+            userProfile.setNickname(updateDTO.getNickname());
+            profileUpdated = true;
+        }
+        
+        if (StringUtils.hasText(updateDTO.getRealName())) {
+            userProfile.setRealName(updateDTO.getRealName());
+            profileUpdated = true;
+        }
+        
+        if (updateDTO.getGender() != null) {
+            userProfile.setGender(updateDTO.getGender());
+            profileUpdated = true;
+        }
+        
+        if (updateDTO.getBirthday() != null) {
+            userProfile.setBirthday(updateDTO.getBirthday());
+            profileUpdated = true;
+        }
+        
+        if (StringUtils.hasText(updateDTO.getSignature())) {
+            userProfile.setSignature(updateDTO.getSignature());
+            profileUpdated = true;
+        }
+        
+        if (StringUtils.hasText(updateDTO.getAddress())) {
+            userProfile.setAddress(updateDTO.getAddress());
+            profileUpdated = true;
+        }
+        
+        if (StringUtils.hasText(updateDTO.getBio())) {
+            userProfile.setBio(updateDTO.getBio());
+            profileUpdated = true;
+        }
+        
+        // 6. 保存用户资料
+        if (profileUpdated) {
+            if (userProfile.getId() == null) {
+                userProfileMapper.insert(userProfile);
+            } else {
+                userProfileMapper.updateById(userProfile);
+            }
+        }
+        
+        // 7. 返回更新后的用户资料
+        log.info("用户 {} 更新了个人资料", userContext.getUsername());
+        return getUserProfileById(userId);
     }
 } 

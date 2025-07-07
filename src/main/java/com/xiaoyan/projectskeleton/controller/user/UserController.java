@@ -8,6 +8,7 @@ import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetRequestDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetVerifyDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileUpdateDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 import com.xiaoyan.projectskeleton.service.user.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +74,19 @@ public class UserController {
         log.info("获取用户资料: {}", userId);
         UserProfileDTO profileDTO = userService.getUserProfileById(userId);
         return ApiResponse.success(profileDTO, "获取用户资料成功");
+    }
+    
+    /**
+     * 更新当前登录用户的资料
+     * @param updateDTO 更新资料请求
+     * @return 更新后的用户资料
+     */
+    @PutMapping("/profile")
+    @RequireLogin
+    public ApiResponse<UserProfileDTO> updateUserProfile(@RequestBody @Validated UserProfileUpdateDTO updateDTO) {
+        log.info("更新当前登录用户的资料");
+        UserProfileDTO profileDTO = userService.updateCurrentUserProfile(updateDTO);
+        return ApiResponse.success(profileDTO, "更新用户资料成功");
     }
     
     /**
