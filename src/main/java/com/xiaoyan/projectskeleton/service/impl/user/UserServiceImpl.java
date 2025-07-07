@@ -20,6 +20,8 @@ import com.xiaoyan.projectskeleton.repository.entity.user.Role;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 import com.xiaoyan.projectskeleton.repository.entity.user.UserProfile;
 import com.xiaoyan.projectskeleton.service.user.UserService;
+import com.xiaoyan.projectskeleton.service.EmailService;
+import com.xiaoyan.projectskeleton.common.util.EmailTemplateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -52,6 +54,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     
     @Autowired
     private JwtConfig jwtConfig;
+    
+    @Autowired
+    private EmailService emailService;
     
     /**
      * 默认角色编码
@@ -296,8 +301,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setStatus(UserStatusEnum.BANNED.getId());
         userMapper.updateById(user);
         
-        // 7. 记录封禁日志（如果需要的话，可以在此处添加记录封禁日志的代码）
+        // 7. 记录封禁日志
         log.info("用户 {} 被 {} 封禁，原因：{}", user.getUsername(), userContext.getUsername(), reason);
+        
+        // 8. 发送封禁通知邮件
+        try {
+            // 生成封禁通知邮件内容
+            String emailContent = EmailTemplateUtil.getBanNotificationTemplate(
+                user.getUsername(),
+                reason,
+                "support@example.com", // 支持邮箱，可以配置到application.properties中
+                "系统自动发送，请勿回复"
+            );
+            
+            // 发送邮件
+            emailService.sendHtmlEmail(
+                null, // 使用系统默认发件人
+                user.getEmail(),
+                "账号封禁通知",
+                emailContent
+            );
+            
+            log.info("已向用户 {} 发送封禁通知邮件", user.getEmail());
+        } catch (Exception e) {
+            // 邮件发送失败不影响封禁操作，只记录日志
+            log.error("向用户 {} 发送封禁通知邮件失败：{}", user.getEmail(), e.getMessage());
+        }
     }
     
     /**

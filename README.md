@@ -134,6 +134,80 @@ String roleCode = jwtUtils.getRoleFromAccessToken(token);
 String newAccessToken = jwtUtils.refreshAccessToken(refreshToken, user, roleCode);
 ```
 
+### EmailService
+
+位置：`src/main/java/com/xiaoyan/projectskeleton/service/EmailService.java`
+
+这是一个邮件服务接口，提供了多种邮件发送功能。服务实现类位于`src/main/java/com/xiaoyan/projectskeleton/service/impl/EmailServiceImpl.java`。主要功能包括：
+
+1. 发送纯文本邮件
+2. 发送HTML格式邮件
+3. 发送带附件的邮件
+4. 完整的自定义邮件发送
+
+#### 使用方法
+
+1. 发送纯文本邮件：
+```java
+emailService.sendTextEmail("sender@example.com", "receiver@example.com", "邮件主题", "邮件内容");
+```
+
+2. 发送HTML邮件：
+```java
+emailService.sendHtmlEmail(null, "receiver@example.com", "HTML邮件", "<h1>这是一封HTML邮件</h1><p>邮件内容</p>");
+```
+
+3. 使用模板发送HTML邮件：
+```java
+String htmlContent = EmailTemplateUtil.getNotificationTemplate("系统通知", "您的账号已激活", "系统邮件，请勿回复");
+emailService.sendHtmlEmail(null, "receiver@example.com", "账号激活通知", htmlContent);
+```
+
+### EmailTemplateUtil
+
+位置：`src/main/java/com/xiaoyan/projectskeleton/common/util/EmailTemplateUtil.java`
+
+这是一个邮件模板工具类，提供了多种预定义的HTML邮件模板。主要功能包括：
+
+1. 简单HTML模板生成
+2. 通知邮件模板生成
+3. 验证码邮件模板生成
+4. 带按钮的操作邮件模板生成
+5. 参数化模板处理（动态替换模板中的变量）
+
+#### 使用方法
+
+1. 生成简单HTML模板：
+```java
+String htmlContent = EmailTemplateUtil.getSimpleTemplate("邮件标题", "邮件正文内容", "页脚信息");
+```
+
+2. 生成通知邮件模板：
+```java
+String htmlContent = EmailTemplateUtil.getNotificationTemplate("系统通知", "您的账号已激活", "系统邮件，请勿回复");
+```
+
+3. 生成验证码邮件模板：
+```java
+String htmlContent = EmailTemplateUtil.getVerificationCodeTemplate("123456", "10分钟", "系统邮件，请勿回复");
+```
+
+4. 生成带按钮的操作邮件模板：
+```java
+String content = "<p>请点击下方按钮激活您的账号</p>";
+String htmlContent = EmailTemplateUtil.getButtonTemplate("账号激活", content, "立即激活", "https://example.com/activate", "系统邮件，请勿回复");
+```
+
+5. 参数化模板处理：
+```java
+String template = "尊敬的${username}，您好！您的验证码为：${code}，有效期为${validTime}。";
+Map<String, String> params = new HashMap<>();
+params.put("username", "张三");
+params.put("code", "123456");
+params.put("validTime", "10分钟");
+String content = EmailTemplateUtil.processTemplate(template, params);
+```
+
 ### JWT双Token认证方案
 
 项目实现了基于JWT的双Token认证方案，包括AccessToken和RefreshToken：
@@ -633,7 +707,17 @@ try {
    - `/user/admin/{userId}/unban` - 解封用户
    - `/user/admin/{userId}` - 删除用户
 
-5. **认证服务模块**
+5. **邮件服务模块**
+   - 支持纯文本邮件发送
+   - 支持HTML格式邮件发送
+   - 支持带附件邮件发送
+   - 内置多种邮件模板
+     - 简单通知模板
+     - 验证码邮件模板
+     - 带按钮的操作邮件模板
+   - 参数化模板支持（支持动态替换模板中的变量）
+
+6. **认证服务模块**
    - JWT 双 Token 认证方案
    - Token 刷新功能
 
