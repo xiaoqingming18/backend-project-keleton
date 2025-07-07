@@ -1,7 +1,7 @@
-package com.xiaoyan.projectskeleton.mapper.user;
+package com.xiaoyan.projectskeleton.mapper.role;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.xiaoyan.projectskeleton.repository.entity.user.Role;
+import com.xiaoyan.projectskeleton.repository.entity.role.Role;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;

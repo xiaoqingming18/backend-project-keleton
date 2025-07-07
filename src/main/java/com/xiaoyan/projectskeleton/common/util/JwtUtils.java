@@ -3,7 +3,7 @@ package com.xiaoyan.projectskeleton.common.util;
 import com.xiaoyan.projectskeleton.common.config.JwtConfig;
 import com.xiaoyan.projectskeleton.common.exception.BusinessException;
 import com.xiaoyan.projectskeleton.common.exception.CommonErrorCode;
-import com.xiaoyan.projectskeleton.repository.entity.user.Role;
+import com.xiaoyan.projectskeleton.repository.entity.role.Role;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
