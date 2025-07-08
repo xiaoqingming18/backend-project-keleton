@@ -249,6 +249,37 @@ String content = EmailTemplateUtil.processTemplate(template, params);
    - 用于在AccessToken过期后获取新的AccessToken
    - 仅包含用户ID
    - 有效期较长（默认7天）
+   - 使用单独的密钥和算法进行签名
+
+### 权限模块
+
+项目实现了基于RBAC（Role-Based Access Control，基于角色的访问控制）的权限管理模块，主要包括以下功能：
+
+1. **权限管理**：
+   - 创建权限：支持创建菜单、按钮、接口三种类型的权限
+   - 权限树结构：支持多级权限嵌套，形成树形结构
+   - 权限查询：支持按ID查询、查询所有权限、查询角色权限等
+
+2. **角色权限分配**：
+   - 为角色分配权限：可以为角色分配多个权限
+   - 权限回收：可以清空角色的所有权限
+
+3. **权限验证**：
+   - 基于注解的权限验证：使用`@RequireRoles`注解进行角色验证
+   - 接口权限控制：可以控制不同角色对接口的访问权限
+
+#### 权限模块接口
+
+1. **创建权限**：`POST /api/permission/create`
+2. **获取权限树**：`GET /api/permission/tree`
+3. **获取所有权限**：`GET /api/permission/list`
+4. **根据ID获取权限**：`GET /api/permission/{id}`
+5. **获取角色权限**：`GET /api/permission/role/{roleId}`
+6. **分配角色权限**：`POST /api/permission/assign`
+7. **删除权限**：`DELETE /api/permission/{id}`
+8. **取消角色权限**：`DELETE /api/permission/role/{roleId}/permission/{permissionId}`
+
+详细的接口文档请参考 `docs/api_doc/permission_api.md`。
 
 #### 认证流程
 
