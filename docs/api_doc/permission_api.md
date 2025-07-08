@@ -9,7 +9,7 @@
 ### 请求信息
 
 - 请求方法: POST
-- 请求路径: `/permission/create`
+- 请求路径: `/api/permission/create`
 - 需要认证: 是
 - 需要角色: `ADMIN`
 
@@ -75,7 +75,7 @@
 ### 请求信息
 
 - 请求方法: GET
-- 请求路径: `/permission/tree`
+- 请求路径: `/api/permission/tree`
 - 需要认证: 是
 - 需要角色: `ADMIN`
 
@@ -139,7 +139,7 @@
 ### 请求信息
 
 - 请求方法: GET
-- 请求路径: `/permission/list`
+- 请求路径: `/api/permission/list`
 - 需要认证: 是
 - 需要角色: `ADMIN`
 
@@ -200,7 +200,7 @@
 ### 请求信息
 
 - 请求方法: GET
-- 请求路径: `/permission/{id}`
+- 请求路径: `/api/permission/{id}`
 - 需要认证: 是
 - 需要角色: `ADMIN`
 
@@ -254,7 +254,7 @@
 ### 请求信息
 
 - 请求方法: GET
-- 请求路径: `/permission/role/{roleId}`
+- 请求路径: `/api/permission/role/{roleId}`
 - 需要认证: 是
 - 需要角色: `ADMIN`
 
@@ -317,7 +317,7 @@
 ### 请求信息
 
 - 请求方法: POST
-- 请求路径: `/permission/assign`
+- 请求路径: `/api/permission/assign`
 - 需要认证: 是
 - 需要角色: `ADMIN`
 
@@ -371,7 +371,7 @@
 ### 请求信息
 
 - 请求方法: DELETE
-- 请求路径: `/permission/{id}`
+- 请求路径: `/api/permission/{id}`
 - 需要认证: 是
 - 需要角色: `ADMIN`
 
@@ -415,7 +415,7 @@
 ### 请求信息
 
 - 请求方法: DELETE
-- 请求路径: `/permission/role/{roleId}/permission/{permissionId}`
+- 请求路径: `/api/permission/role/{roleId}/permission/{permissionId}`
 - 需要认证: 是
 - 需要角色: `ADMIN`
 
