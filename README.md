@@ -786,6 +786,22 @@ try {
    接口列表：
    - `/auth/refresh-token` - 刷新 Token
 
+7. **文件服务模块**
+   - 基于MinIO的文件存储服务
+   - 支持单文件和批量文件上传
+   - 支持指定目录上传
+   - 支持文件删除
+   - 提供公共访问的文件上传接口
+   - 返回可公共访问的URL
+
+   接口列表：
+   - `/file/upload` - 上传单个文件
+   - `/file/upload/{directory}` - 上传单个文件到指定目录
+   - `/file/batch-upload` - 批量上传文件
+   - `/file/batch-upload/{directory}` - 批量上传文件到指定目录
+   - `/file/{objectName}` - 删除文件
+   - `/public/file/upload` - 公共文件上传接口（无需登录）
+
 项目仍在开发中，后续将添加更多功能模块，如用户认证、权限管理等。
 
 > 注：详细的接口文档请参考 `docs/api_doc/` 目录下的相关文件，如 `docs/api_doc/user_api.md`。
