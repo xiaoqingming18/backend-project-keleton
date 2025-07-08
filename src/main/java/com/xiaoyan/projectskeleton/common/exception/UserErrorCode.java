@@ -92,7 +92,17 @@ public enum UserErrorCode implements ErrorCode {
     /**
      * 用户未登录
      */
-    USER_NOT_LOGIN(10017, "用户未登录");
+    USER_NOT_LOGIN(10017, "用户未登录"),
+    
+    /**
+     * 头像上传失败
+     */
+    UPDATE_AVATAR_FAILED(10018, "头像上传失败"),
+    
+    /**
+     * 头像格式不支持
+     */
+    AVATAR_FORMAT_NOT_SUPPORTED(10019, "头像格式不支持，请上传图片文件");
 
     /**
      * 错误码

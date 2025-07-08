@@ -9,12 +9,14 @@ import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetRequestDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetVerifyDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileUpdateDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserAvatarUpdateDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 import com.xiaoyan.projectskeleton.service.user.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 用户控制器
@@ -87,6 +89,19 @@ public class UserController {
         log.info("更新当前登录用户的资料");
         UserProfileDTO profileDTO = userService.updateCurrentUserProfile(updateDTO);
         return ApiResponse.success(profileDTO, "更新用户资料成功");
+    }
+    
+    /**
+     * 更新当前登录用户的头像
+     * @param avatarFile 头像文件
+     * @return 更新后的头像URL
+     */
+    @PostMapping("/avatar")
+    @RequireLogin
+    public ApiResponse<UserAvatarUpdateDTO> updateAvatar(@RequestParam("file") MultipartFile avatarFile) {
+        log.info("更新当前登录用户的头像");
+        UserAvatarUpdateDTO result = userService.updateCurrentUserAvatar(avatarFile);
+        return ApiResponse.success(result, "头像更新成功");
     }
     
     /**

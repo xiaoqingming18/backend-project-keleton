@@ -9,10 +9,12 @@ import com.xiaoyan.projectskeleton.common.exception.BusinessException;
 import com.xiaoyan.projectskeleton.common.exception.EmailErrorCode;
 import com.xiaoyan.projectskeleton.common.exception.ExceptionUtils;
 import com.xiaoyan.projectskeleton.common.exception.UserErrorCode;
+import com.xiaoyan.projectskeleton.common.exception.FileErrorCode;
 import com.xiaoyan.projectskeleton.common.util.JwtUtils;
 import com.xiaoyan.projectskeleton.mapper.role.RoleMapper;
 import com.xiaoyan.projectskeleton.mapper.user.UserMapper;
 import com.xiaoyan.projectskeleton.mapper.user.UserProfileMapper;
+import com.xiaoyan.projectskeleton.repository.dto.file.FileUploadResponseDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.JwtTokenDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserLoginDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileDTO;
@@ -20,11 +22,13 @@ import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetRequestDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetVerifyDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileUpdateDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserAvatarUpdateDTO;
 import com.xiaoyan.projectskeleton.repository.entity.role.Role;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
 import com.xiaoyan.projectskeleton.repository.entity.user.UserProfile;
 import com.xiaoyan.projectskeleton.service.user.UserService;
 import com.xiaoyan.projectskeleton.service.EmailService;
+import com.xiaoyan.projectskeleton.service.file.FileService;
 import com.xiaoyan.projectskeleton.common.util.EmailTemplateUtil;
 import com.xiaoyan.projectskeleton.common.util.RedisUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -68,6 +73,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     
     @Autowired
     private RedisUtils redisUtils;
+    
+    @Autowired
+    private FileService fileService;
     
     /**
      * 默认角色编码
@@ -692,5 +700,74 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 7. 返回更新后的用户资料
         log.info("用户 {} 更新了个人资料", userContext.getUsername());
         return getUserProfileById(userId);
+    }
+    
+    /**
+     * 更新当前登录用户的头像
+     * @param avatarFile 头像文件
+     * @return 更新后的头像URL
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public UserAvatarUpdateDTO updateCurrentUserAvatar(MultipartFile avatarFile) {
+        // 1. 获取当前登录用户ID
+        UserContext userContext = UserContext.getCurrentUser();
+        ExceptionUtils.assertNotNull(userContext, UserErrorCode.USER_NOT_LOGIN);
+        Long userId = userContext.getUserId();
+        ExceptionUtils.assertNotNull(userId, UserErrorCode.USER_NOT_LOGIN);
+        
+        // 2. 校验文件是否为空
+        if (avatarFile == null || avatarFile.isEmpty()) {
+            throw new BusinessException(FileErrorCode.FILE_EMPTY);
+        }
+        
+        // 3. 校验文件类型
+        String contentType = avatarFile.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new BusinessException(FileErrorCode.FILE_TYPE_NOT_SUPPORTED, "只支持上传图片文件");
+        }
+        
+        try {
+            // 4. 上传头像文件到avatars目录
+            FileUploadResponseDTO uploadResult = fileService.uploadFile(avatarFile, "avatars");
+            
+            // 5. 获取头像URL
+            String avatarUrl = uploadResult.getUrl();
+            
+            // 6. 更新用户头像
+            User user = userMapper.selectById(userId);
+            ExceptionUtils.assertNotNull(user, UserErrorCode.USER_NOT_EXISTS);
+            
+            // 7. 保存旧头像路径，用于后续删除
+            String oldAvatarUrl = user.getAvatar();
+            
+            // 8. 更新用户头像URL
+            user.setAvatar(avatarUrl);
+            userMapper.updateById(user);
+            
+            // 9. 如果旧头像存在且不是默认头像，则删除旧头像
+            if (StringUtils.hasText(oldAvatarUrl) && !oldAvatarUrl.contains("default-avatar")) {
+                try {
+                    // 从URL中提取对象名称
+                    String objectName = oldAvatarUrl.substring(oldAvatarUrl.indexOf("avatars/"));
+                    fileService.deleteFile(objectName);
+                } catch (Exception e) {
+                    // 删除旧头像失败不影响业务，只记录日志
+                    log.warn("删除旧头像失败: {}", e.getMessage());
+                }
+            }
+            
+            // 10. 返回更新结果
+            return UserAvatarUpdateDTO.builder()
+                    .avatarUrl(avatarUrl)
+                    .build();
+            
+        } catch (BusinessException e) {
+            // 业务异常直接抛出
+            throw e;
+        } catch (Exception e) {
+            log.error("更新用户头像失败: {}", e.getMessage(), e);
+            throw new BusinessException(UserErrorCode.UPDATE_AVATAR_FAILED, "更新用户头像失败: " + e.getMessage());
+        }
     }
 } 

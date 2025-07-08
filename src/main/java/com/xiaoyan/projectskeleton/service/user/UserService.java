@@ -7,7 +7,9 @@ import com.xiaoyan.projectskeleton.repository.dto.user.UserRegisterDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetRequestDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.PasswordResetVerifyDTO;
 import com.xiaoyan.projectskeleton.repository.dto.user.UserProfileUpdateDTO;
+import com.xiaoyan.projectskeleton.repository.dto.user.UserAvatarUpdateDTO;
 import com.xiaoyan.projectskeleton.repository.entity.user.User;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -119,4 +121,11 @@ public interface UserService {
      * @return 更新后的用户资料
      */
     UserProfileDTO updateCurrentUserProfile(UserProfileUpdateDTO updateDTO);
+    
+    /**
+     * 更新当前登录用户的头像
+     * @param avatarFile 头像文件
+     * @return 更新后的头像URL
+     */
+    UserAvatarUpdateDTO updateCurrentUserAvatar(MultipartFile avatarFile);
 } 
