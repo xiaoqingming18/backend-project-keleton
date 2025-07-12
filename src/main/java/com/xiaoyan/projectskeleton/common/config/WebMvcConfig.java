@@ -40,6 +40,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/user/check-email",    // 检查邮箱接口
                         "/api/auth/refresh-token",  // 刷新Token接口
                         "/api/user/role/list",      // 角色列表接口
+                        "/api/user/password/reset-code", // 发送密码重置验证码接口
+                        "/api/user/password/reset",      // 验证验证码并重置密码接口
                         "/api/public/**"            // 公共接口，不需要登录即可访问
                 );
     }
